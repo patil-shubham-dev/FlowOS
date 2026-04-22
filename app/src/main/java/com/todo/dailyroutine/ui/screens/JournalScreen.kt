@@ -1,0 +1,158 @@
+package com.todo.dailyroutine.ui.screens
+
+import androidx.compose.foundation.*
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.*
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.unit.dp
+import com.mohamedrejeb.richeditor.model.RichTextState
+import com.mohamedrejeb.richeditor.ui.material3.RichTextEditor
+import com.mohamedrejeb.richeditor.ui.material3.RichTextEditorDefaults
+import com.todo.dailyroutine.ui.viewmodel.*
+import com.todo.dailyroutine.ui.components.*
+import com.todo.dailyroutine.ui.theme.*
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun JournalScreen(viewModel: JournalViewModel, authViewModel: AuthViewModel) {
+    val entries by viewModel.entries.collectAsState()
+    val isEnhancing by viewModel.isEnhancing.collectAsState()
+    val streak by viewModel.streak.collectAsState()
+    val isVoiceListening by viewModel.isVoiceListening.collectAsState()
+    val voiceText by viewModel.voiceText.collectAsState()
+    val richTextState = remember { RichTextState() }
+
+    LaunchedEffect(voiceText) {
+        if (voiceText.isNotEmpty()) {
+            viewModel.enhanceEntry(voiceText) { polished ->
+                val currentText = richTextState.toHtml()
+                richTextState.setHtml(currentText + "<p>$polished</p>")
+            }
+        }
+    }
+    var currentRating by remember { mutableIntStateOf(5) }
+    val haptic = LocalHapticFeedback.current
+
+    DashboardScaffold(title = "Reflection") {
+        item {
+            JournalStreakHeader(streak = streak)
+        }
+
+        item {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(28.dp),
+                color = SurfaceCard,
+                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.05f))
+            ) {
+                Column(Modifier.padding(24.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("Current Vibe", style = Typography.titleLarge, color = Color.White)
+                        Spacer(Modifier.weight(1f))
+                        Text("$currentRating/10", style = Typography.headlineLarge, color = AccentPrimary)
+                    }
+                    
+                    Slider(
+                        value = currentRating.toFloat(),
+                        onValueChange = { currentRating = it.toInt() },
+                        valueRange = 1f..10f,
+                        steps = 8,
+                        colors = SliderDefaults.colors(
+                            thumbColor = AccentPrimary,
+                            activeTrackColor = AccentPrimary,
+                            inactiveTrackColor = TextTertiary
+                        )
+                    )
+                    
+                    Spacer(Modifier.height(16.dp))
+                    
+                    Surface(
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 200.dp),
+                        shape = RoundedCornerShape(24.dp),
+                        color = BackgroundBase,
+                        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.05f))
+                    ) {
+                        Column {
+                            RichTextEditor(
+                                state = richTextState,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .weight(1f)
+                                    .background(Color.Transparent),
+                                colors = RichTextEditorDefaults.richTextEditorColors(
+                                    containerColor = Color.Transparent,
+                                    cursorColor = AccentPrimary,
+                                    textColor = Color.White
+                                ),
+                                placeholder = { Text("Synthesize your cycles...", color = TextTertiary) }
+                            )
+                            
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(8.dp),
+                                horizontalArrangement = Arrangement.End,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                IconButton(onClick = { 
+                                    if (isVoiceListening) viewModel.stopVoiceRecording() 
+                                    else viewModel.startVoiceRecording()
+                                }) {
+                                    Icon(
+                                        imageVector = Icons.Default.Mic, 
+                                        contentDescription = null, 
+                                        tint = if (isVoiceListening) Color.Red else AccentPrimary
+                                    )
+                                }
+                                IconButton(onClick = { 
+                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    viewModel.enhanceEntry(richTextState.toHtml()) { enhanced ->
+                                        richTextState.setHtml(enhanced)
+                                    }
+                                }) {
+                                    if (isEnhancing) {
+                                        CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp, color = AccentPrimary)
+                                    } else {
+                                        Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = AccentPrimary)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
+                    Spacer(Modifier.height(24.dp))
+                    
+                    PrimaryGradientButton(
+                        text = "Document Reflection",
+                        loading = false,
+                        onClick = { 
+                            viewModel.saveEntry("user", richTextState.toHtml(), currentRating)
+                            richTextState.setText("")
+                        }
+                    )
+                }
+            }
+        }
+        
+        item {
+            Spacer(Modifier.height(24.dp))
+            Text("Synced Journey", style = Typography.titleLarge, color = Color.White)
+        }
+
+        items(entries) { entry ->
+            JournalEntryCard(entry)
+        }
+
+        item { Spacer(Modifier.height(120.dp)) }
+    }
+}
