@@ -38,17 +38,31 @@ class TaskRepository(
         }
     }
 
-    suspend fun addTask(title: String, category: String, energy: Int = 5): Result<Unit> = runCatching {
+    suspend fun addTask(title: String, category: String, priority: Int = 2, energy: Int = 5, timeBlock: String = "Morning"): Result<Unit> = runCatching {
         val newTask = LocalTask(
             id = java.util.UUID.randomUUID().toString(),
             userId = sessionManager.userId(),
             title = title,
             category = category,
             completed = false,
+            priority = priority,
             energyRequired = energy,
+            timeBlock = timeBlock,
             syncStatus = 1 // PENDING_CREATE
         )
         taskDao.insertTask(newTask)
+    }
+
+    suspend fun toggleTask(taskId: String): Result<Unit> = runCatching {
+        val tasks = taskDao.getAllTasks().first()
+        val task = tasks.find { it.id == taskId }
+        if (task != null) {
+            taskDao.updateTask(task.copy(
+                completed = !task.completed,
+                syncStatus = 2,
+                lastUpdated = System.currentTimeMillis()
+            ))
+        }
     }
 
     suspend fun toggleTask(task: TaskItem): Result<Unit> = runCatching {

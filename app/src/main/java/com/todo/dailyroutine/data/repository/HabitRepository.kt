@@ -38,13 +38,14 @@ class HabitRepository(
         }
     }
 
-    suspend fun addHabit(name: String): Result<Unit> = runCatching {
+    suspend fun addHabit(name: String, timeBlock: String = "Morning"): Result<Unit> = runCatching {
         val newHabit = LocalHabit(
             id = java.util.UUID.randomUUID().toString(),
             userId = sessionManager.userId(),
             name = name,
             streak = 0,
             completedToday = false,
+            timeBlock = timeBlock,
             syncStatus = 1
         )
         habitDao.insertHabit(newHabit)
@@ -60,5 +61,29 @@ class HabitRepository(
             lastUpdated = System.currentTimeMillis()
         )
         habitDao.insertHabit(local)
+    }
+
+    suspend fun toggleHabit(habitId: String): Result<Unit> = runCatching {
+        val habits = habitDao.getAllHabits().first()
+        val habit = habits.find { it.id == habitId }
+        if (habit != null) {
+            val nextCompleted = !habit.completedToday
+            val nextStreak = if (nextCompleted) habit.streak + 1 else (habit.streak - 1).coerceAtLeast(0)
+            habitDao.insertHabit(habit.copy(
+                completedToday = nextCompleted,
+                streak = nextStreak,
+                syncStatus = 2,
+                lastUpdated = System.currentTimeMillis()
+            ))
+        }
+    }
+
+    suspend fun deleteHabit(habitId: String): Result<Unit> = runCatching {
+        // Mark as deleted by updating syncStatus to 3
+        val habits = habitDao.getAllHabits().first()
+        val habit = habits.find { it.id == habitId }
+        if (habit != null) {
+            habitDao.insertHabit(habit.copy(syncStatus = 3))
+        }
     }
 }
