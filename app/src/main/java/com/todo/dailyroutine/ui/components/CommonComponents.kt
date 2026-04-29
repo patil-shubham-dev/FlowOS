@@ -29,6 +29,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import com.todo.dailyroutine.ui.theme.*
 
 @Composable
@@ -39,7 +41,9 @@ fun FlowStatCard(
     modifier: Modifier = Modifier
 ) {
     Surface(
-        modifier = modifier.height(110.dp),
+        modifier = modifier
+            .fillMaxWidth()
+            .height(110.dp),
         shape = RoundedCornerShape(20.dp),
         color = SurfaceCard
     ) {
@@ -126,6 +130,7 @@ fun ShimmerBox(
             .background(SurfaceElevated.copy(alpha = alpha))
     )
 }
+
 @Composable
 fun PrimaryGradientButton(
     text: String,
@@ -287,6 +292,7 @@ private fun MiniStat(label: String, done: Int, total: Int, color: Color) {
         }
     }
 }
+
 @Composable
 fun DashboardScaffold(
     title: String,
@@ -295,17 +301,21 @@ fun DashboardScaffold(
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .background(BackgroundBase)
-            .padding(horizontal = 24.dp),
-        contentPadding = PaddingValues(bottom = 120.dp)
+            .background(BackgroundBase),
+        contentPadding = PaddingValues(
+            start = 20.dp,
+            end = 20.dp,
+            top = 16.dp,
+            bottom = 140.dp
+        )
     ) {
         item {
-            Spacer(Modifier.height(56.dp))
+            Spacer(Modifier.height(24.dp))
             Text(
                 text = title,
                 style = Typography.displayLarge,
                 color = Color.White,
-                modifier = Modifier.padding(bottom = 8.dp)
+                modifier = Modifier.padding(bottom = 16.dp)
             )
         }
         content()

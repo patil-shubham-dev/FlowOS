@@ -12,7 +12,12 @@ fun TaskItem.toEntity() = LocalTask(
     category = category,
     completed = completed,
     priority = priority,
-    sortOrder = sortOrder
+    energyRequired = energyRequired,
+    timeBlock = timeBlock,
+    scheduledTime = scheduledTime,
+    sortOrder = sortOrder,
+    lastUpdated = System.currentTimeMillis(),
+    syncStatus = 0
 )
 
 fun LocalTask.toModel() = TaskItem(
@@ -25,5 +30,23 @@ fun LocalTask.toModel() = TaskItem(
     sortOrder = sortOrder
 )
 
-fun HabitItem.toEntity() = LocalHabit(id, userId, name, streak, completedToday)
-fun LocalHabit.toModel() = HabitItem(id, userId, name, streak, completedToday)
+fun HabitItem.toEntity() = LocalHabit(
+    id = id,
+    userId = userId,
+    name = name,
+    streak = streak,
+    completedToday = completedToday,
+    timeBlock = timeBlock,
+    scheduledTime = scheduledTime,
+    sortOrder = sortOrder,
+    lastUpdated = System.currentTimeMillis(),
+    syncStatus = 0
+)
+
+fun LocalHabit.toModel() = HabitItem(
+    id = id,
+    userId = userId,
+    name = name,
+    streak = streak,
+    completedToday = completedToday
+)

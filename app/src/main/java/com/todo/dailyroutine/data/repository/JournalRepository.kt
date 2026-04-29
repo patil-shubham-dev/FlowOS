@@ -27,12 +27,15 @@ class JournalRepository(
         
         // Update persistent streak
         val currentStreak = getCurrentStreak(userId)
+        val existingStreak = streakDao.getStreak(userId)
+        val longestStreak = maxOf(currentStreak, existingStreak?.longestStreak ?: 0)
+        
         streakDao.updateStreak(
             LocalJournalStreak(
                 userId = userId,
                 currentStreak = currentStreak,
                 lastEntryDate = entry.date,
-                longestStreak = 0 // Update if current > longest
+                longestStreak = longestStreak
             )
         )
     }
@@ -61,5 +64,9 @@ class JournalRepository(
             }
         }
         return streak
+    }
+    
+    suspend fun getStreak(userId: String): LocalJournalStreak? {
+        return streakDao.getStreak(userId)
     }
 }

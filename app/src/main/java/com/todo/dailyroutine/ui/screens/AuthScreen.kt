@@ -93,7 +93,13 @@ fun AuthScreen(
                         AuthMode.OTP -> {
                             AuthTextField(otp, { otp = it }, "Verification Protocol", Icons.Default.VerifiedUser)
                         }
-                        else -> { }
+                        AuthMode.FORGOT_PASSWORD -> {
+                            AuthTextField(email, { email = it }, "Identity (Email)", Icons.Default.Email)
+                        }
+                        AuthMode.RESET_PASSWORD -> {
+                            AuthTextField(otp, { otp = it }, "Reset Code", Icons.Default.VerifiedUser)
+                            AuthTextField(password, { password = it }, "New Security Key", Icons.Default.Lock, isPassword = true)
+                        }
                     }
                 }
             }
@@ -101,13 +107,15 @@ fun AuthScreen(
             Spacer(Modifier.height(32.dp))
 
             if (state.error != null) ErrorCard(state.error!!, modifier = Modifier.padding(bottom = 16.dp))
+            if (state.statusMessage != null) SuccessCard(state.statusMessage!!, modifier = Modifier.padding(bottom = 16.dp))
             
             PrimaryGradientButton(
                 text = when (state.mode) {
                     AuthMode.LOGIN -> "Initiate Session"
                     AuthMode.SIGNUP -> "Register Identity"
                     AuthMode.OTP -> "Verify Protocol"
-                    else -> "Proceed"
+                    AuthMode.FORGOT_PASSWORD -> "Send Reset Code"
+                    AuthMode.RESET_PASSWORD -> "Reset Password"
                 },
                 loading = state.loading,
                 onClick = {
@@ -115,21 +123,43 @@ fun AuthScreen(
                         AuthMode.LOGIN -> viewModel.signIn(email, password)
                         AuthMode.SIGNUP -> viewModel.signUp(email, password)
                         AuthMode.OTP -> viewModel.verifyOtp(otp)
-                        else -> {}
+                        AuthMode.FORGOT_PASSWORD -> viewModel.requestPasswordReset(email)
+                        AuthMode.RESET_PASSWORD -> viewModel.resetPassword(otp, password)
                     }
                 }
             )
 
-            TextButton(
-                onClick = { 
-                    viewModel.setMode(if (state.mode == AuthMode.LOGIN) AuthMode.SIGNUP else AuthMode.LOGIN)
-                },
-                modifier = Modifier.padding(top = 16.dp)
-            ) {
-                Text(
-                    if (state.mode == AuthMode.LOGIN) "Create new identity" else "Already has identity",
-                    color = TextSecondary
-                )
+            when (state.mode) {
+                AuthMode.LOGIN -> {
+                    TextButton(
+                        onClick = { viewModel.setMode(AuthMode.SIGNUP) },
+                        modifier = Modifier.padding(top = 8.dp)
+                    ) {
+                        Text("Create new identity", color = TextSecondary)
+                    }
+                    TextButton(
+                        onClick = { viewModel.setMode(AuthMode.FORGOT_PASSWORD) },
+                        modifier = Modifier.padding(top = 4.dp)
+                    ) {
+                        Text("Forgot password?", color = TextSecondary)
+                    }
+                }
+                AuthMode.SIGNUP -> {
+                    TextButton(
+                        onClick = { viewModel.setMode(AuthMode.LOGIN) },
+                        modifier = Modifier.padding(top = 16.dp)
+                    ) {
+                        Text("Already has identity", color = TextSecondary)
+                    }
+                }
+                else -> {
+                    TextButton(
+                        onClick = { viewModel.setMode(AuthMode.LOGIN) },
+                        modifier = Modifier.padding(top = 16.dp)
+                    ) {
+                        Text("Back to login", color = TextSecondary)
+                    }
+                }
             }
         }
     }

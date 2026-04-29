@@ -11,30 +11,29 @@ class OracleToolExecutor(
     private val taskRepository: TaskRepository,
     private val habitRepository: HabitRepository,
     private val journalRepository: JournalRepository,
-    private val flowScoreRepository: FlowScoreRepository // New repository to be created
+    private val flowScoreRepository: FlowScoreRepository
 ) {
     suspend fun executeToolCall(name: String, args: String, userId: String): String {
         val json = JSONObject(args)
         return when (name) {
             "create_task" -> {
                 val title = json.getString("title")
-                val category = json.optString("category", "General")
+                val category = json.optString("category", "work")
                 val priority = json.optInt("priority", 2)
                 val energyRequired = json.optInt("energyRequired", 5)
                 val timeBlock = json.optString("timeBlock", "Morning")
-                // Create task with all fields
                 taskRepository.addTask(title, category, priority, energyRequired, timeBlock)
-                "Deployed task: $title (Priority: $priority, Energy: $energyRequired, Block: $timeBlock)"
+                "Task deployed: $title (Priority: $priority, Energy: $energyRequired, Block: $timeBlock)"
             }
             "complete_task" -> {
                 val taskId = json.getString("taskId")
                 taskRepository.toggleTask(taskId)
-                "Task optimized for completion and marked complete."
+                "Task marked complete and flow state updated."
             }
             "delete_task" -> {
                 val taskId = json.getString("taskId")
                 taskRepository.softDeleteTask(taskId)
-                "Task removed from protocol."
+                "Task removed from active protocol."
             }
             "create_habit" -> {
                 val habitName = json.getString("name")
@@ -45,7 +44,7 @@ class OracleToolExecutor(
             "complete_habit" -> {
                 val habitId = json.getString("habitId")
                 habitRepository.toggleHabit(habitId)
-                "Ritual synchronized and streak updated."
+                "Ritual synchronized and streak incremented."
             }
             "delete_habit" -> {
                 val habitId = json.getString("habitId")
@@ -60,14 +59,26 @@ class OracleToolExecutor(
             }
             "update_vibe_score" -> {
                 val rating = json.getInt("rating")
+                // Store vibe rating in preferences or memory for context
                 "Vibe state updated to $rating/10. Emotional baseline recorded."
             }
             "get_daily_summary" -> {
-                "Generating daily synthesis report..."
+                try {
+                    val today = java.time.LocalDate.now().toString()
+                    val score = flowScoreRepository.getScoreForDate(userId, today)
+                    if (score != null) {
+                        "Daily Summary: ${score.tasksCompleted}/${score.totalTasks} tasks, ${score.habitsCompleted}/${score.totalHabits} habits, Flow Score: ${score.score}"
+                    } else {
+                        "No data recorded yet for today."
+                    }
+                } catch (e: Exception) {
+                    "Unable to generate daily summary."
+                }
             }
             "schedule_reminder" -> {
                 val reminderText = json.getString("text")
                 val timeMinutes = json.optInt("minutesFromNow", 60)
+                // In a real implementation, this would schedule a notification
                 "Reminder scheduled: $reminderText in $timeMinutes minutes"
             }
             else -> "Protocol unknown: $name"

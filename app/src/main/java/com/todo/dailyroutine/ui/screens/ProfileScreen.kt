@@ -19,6 +19,17 @@ import com.todo.dailyroutine.ui.theme.*
 
 @Composable
 fun ProfileScreen(authViewModel: AuthViewModel, onSignedOut: () -> Unit) {
+    val state by authViewModel.uiState.collectAsState()
+    var showAppLockDialog by remember { mutableStateOf(false) }
+    
+    if (showAppLockDialog) {
+        AppLockDialog(
+            enabled = state.isAppLockEnabled,
+            onToggle = { authViewModel.toggleAppLock(it) },
+            onDismiss = { showAppLockDialog = false }
+        )
+    }
+    
     DashboardScaffold(title = "System") {
         item {
             Surface(
@@ -52,7 +63,7 @@ fun ProfileScreen(authViewModel: AuthViewModel, onSignedOut: () -> Unit) {
                     }
                     
                     Spacer(Modifier.height(16.dp))
-                    Text("Flow User", style = Typography.headlineMedium, color = Color.White)
+                    Text(state.userEmail ?: "Flow User", style = Typography.headlineMedium, color = Color.White)
                     Text("Protocol: Active", style = Typography.labelLarge, color = Color(0xFF30D158))
                 }
             }
@@ -60,27 +71,109 @@ fun ProfileScreen(authViewModel: AuthViewModel, onSignedOut: () -> Unit) {
 
         item {
             ProfileSection(title = "Core Configuration") {
-                ProfileItem(Icons.Default.Settings, "Interface", "Synchronize visual state") {}
-                ProfileItem(Icons.Default.Notifications, "Frequency", "Define nudge protocol") {}
-                ProfileItem(Icons.Default.Security, "Privacy", "Manage encryption keys") {}
+                ProfileItem(
+                    Icons.Default.Brightness4,
+                    "Appearance",
+                    "Dark mode enabled",
+                    onClick = { /* Theme toggle */ }
+                )
+                ProfileItem(
+                    Icons.Default.Notifications,
+                    "Notifications",
+                    "Real-time updates active",
+                    onClick = { /* Notification settings */ }
+                )
+                ProfileItem(
+                    Icons.Default.Security,
+                    "App Lock",
+                    if (state.isAppLockEnabled) "Enabled" else "Disabled",
+                    onClick = { showAppLockDialog = true }
+                )
+            }
+        }
+
+        item {
+            ProfileSection(title = "Data & Privacy") {
+                ProfileItem(
+                    Icons.Default.Storage,
+                    "Local Storage",
+                    "All data stored locally",
+                    onClick = { /* Storage info */ }
+                )
+                ProfileItem(
+                    Icons.Default.DeleteOutline,
+                    "Clear Cache",
+                    "Remove temporary data",
+                    onClick = { /* Clear cache */ }
+                )
             }
         }
 
         item {
             ProfileSection(title = "Protocol Termination") {
                 ProfileItem(
-                    icon = Icons.AutoMirrored.Filled.Logout, 
-                    title = "Terminate Session", 
+                    icon = Icons.AutoMirrored.Filled.Logout,
+                    title = "Terminate Session",
                     subtitle = "Safe exit to standby",
-                    onClick = { 
+                    onClick = {
                         authViewModel.signOut()
                         onSignedOut()
                     }
                 )
             }
         }
-        item { Spacer(Modifier.height(120.dp)) }
+        
+        item { Spacer(Modifier.height(60.dp)) }
     }
+}
+
+@Composable
+fun AppLockDialog(
+    enabled: Boolean,
+    onToggle: (Boolean) -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("App Lock", color = Color.White) },
+        text = {
+            Column {
+                Text(
+                    "Protect your FlowOS with biometric or device authentication.",
+                    style = Typography.labelSmall,
+                    color = TextSecondary,
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text("Enable App Lock", color = Color.White)
+                    Switch(
+                        checked = enabled,
+                        onCheckedChange = onToggle,
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = AccentPrimary,
+                            checkedTrackColor = AccentPrimary.copy(alpha = 0.5f)
+                        )
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = onDismiss,
+                colors = ButtonDefaults.buttonColors(containerColor = AccentPrimary)
+            ) {
+                Text("Done")
+            }
+        },
+        containerColor = SurfaceElevated,
+        textContentColor = Color.White
+    )
 }
 
 @Composable
@@ -102,7 +195,13 @@ fun ProfileSection(title: String, modifier: Modifier = Modifier, content: @Compo
 }
 
 @Composable
-fun ProfileItem(icon: ImageVector, title: String, subtitle: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
+fun ProfileItem(
+    icon: ImageVector,
+    title: String,
+    subtitle: String,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
     Row(
         modifier = modifier
             .fillMaxWidth()

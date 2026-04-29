@@ -64,9 +64,15 @@ interface AiConfigDao {
 
     @Query("SELECT * FROM ai_configs WHERE isActive = 1 LIMIT 1")
     suspend fun getActiveConfig(): LocalAiConfig?
+    
+    @Query("SELECT * FROM ai_configs WHERE id = :id LIMIT 1")
+    suspend fun getConfigById(id: String): LocalAiConfig?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertConfig(config: LocalAiConfig)
+    
+    @Query("DELETE FROM ai_configs WHERE id = :id")
+    suspend fun deleteConfigById(id: String)
     
     @Query("UPDATE ai_configs SET isActive = 0")
     suspend fun deactivateAll()

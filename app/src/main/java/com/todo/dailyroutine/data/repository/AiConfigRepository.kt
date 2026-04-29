@@ -10,6 +10,7 @@ import com.todo.dailyroutine.data.local.dao.AiConfigDao
 import com.todo.dailyroutine.data.local.entity.LocalAiConfig
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import java.util.UUID
 
 class AiConfigRepository(
     private val restApi: SupabaseRestApi,
@@ -32,54 +33,118 @@ class AiConfigRepository(
         model = model,
         isActive = isActive
     )
+
+    suspend fun getActiveConfig(): UserApiConfig? {
+        return getActiveConfigLocal()
+    }
+
     suspend fun getConfigs(): Result<List<UserApiConfig>> {
-        val userId = sessionManager.getUserId()
-            ?: return Result.failure(Exception("User not logged in"))
-        val tokenValue = sessionManager.getToken()
-            ?: return Result.failure(Exception("Auth token missing"))
-        
-        val token = "Bearer $tokenValue"
-        
-        return runCatching {
-            restApi.getApiConfigs(BuildConfig.SUPABASE_ANON_KEY, token, userIdFilter = "eq.$userId").map { it.toModel() }
+        // Try local first
+        return try {
+            val localConfigs = aiConfigDao.getAllConfigs().firstOrNull() ?: emptyList()
+            if (localConfigs.isNotEmpty()) {
+                Result.success(localConfigs.map { it.toModel() })
+            } else {
+                // Fallback to Supabase if local is empty
+                val userId = sessionManager.getUserId()
+                    ?: return Result.failure(Exception("User not logged in"))
+                val tokenValue = sessionManager.getToken()
+                    ?: return Result.failure(Exception("Auth token missing"))
+                
+                val token = "Bearer $tokenValue"
+                
+                runCatching {
+                    restApi.getApiConfigs(BuildConfig.SUPABASE_ANON_KEY, token, userIdFilter = "eq.$userId").map { it.toModel() }
+                }
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
         }
     }
 
     suspend fun saveConfig(config: UserApiConfig): Result<UserApiConfig> {
-        val userId = sessionManager.getUserId()
-            ?: return Result.failure(Exception("User not logged in"))
-        val tokenValue = sessionManager.getToken()
-            ?: return Result.failure(Exception("Auth token missing"))
-            
-        val token = "Bearer $tokenValue"
-        val dto = config.toDto(userId)
+        val userId = sessionManager.getUserId() ?: "local_user"
         
         return runCatching {
-            val response = restApi.createApiConfig(BuildConfig.SUPABASE_ANON_KEY, token, body = dto)
-            response.first().toModel()
+            // Save to local Room database first
+            val configId = if (config.id.isEmpty()) UUID.randomUUID().toString() else config.id
+            val localConfig = LocalAiConfig(
+                id = configId,
+                userId = userId,
+                providerName = config.providerName,
+                baseUrl = config.baseUrl,
+                apiKeyEncrypted = config.apiKey,
+                model = config.model,
+                isActive = config.isActive,
+                lastUpdated = System.currentTimeMillis(),
+                syncStatus = 0
+            )
+            
+            // Deactivate all other configs if this one is active
+            if (config.isActive) {
+                aiConfigDao.deactivateAll()
+            }
+            
+            aiConfigDao.insertConfig(localConfig)
+            
+            // Try to sync to Supabase if logged in
+            val tokenValue = sessionManager.getToken()
+            if (tokenValue != null) {
+                val token = "Bearer $tokenValue"
+                val dto = config.toDto(userId)
+                try {
+                    restApi.createApiConfig(BuildConfig.SUPABASE_ANON_KEY, token, body = dto)
+                } catch (e: Exception) {
+                    // Supabase sync failed, but local save succeeded
+                }
+            }
+            
+            localConfig.toModel()
         }
     }
 
     suspend fun updateConfig(id: String, updates: Map<String, Any>): Result<Unit> {
-        val tokenValue = sessionManager.getToken()
-            ?: return Result.failure(Exception("Auth token missing"))
-            
-        val token = "Bearer $tokenValue"
-        
         return runCatching {
-            restApi.updateApiConfig(BuildConfig.SUPABASE_ANON_KEY, token, idFilter = "eq.$id", body = updates)
+            // Update local first
+            val config = aiConfigDao.getConfigById(id)
+            if (config != null) {
+                val updated = config.copy(
+                    lastUpdated = System.currentTimeMillis(),
+                    syncStatus = 0
+                )
+                aiConfigDao.insertConfig(updated)
+            }
+            
+            // Try to sync to Supabase if logged in
+            val tokenValue = sessionManager.getToken()
+            if (tokenValue != null) {
+                val token = "Bearer $tokenValue"
+                try {
+                    restApi.updateApiConfig(BuildConfig.SUPABASE_ANON_KEY, token, idFilter = "eq.$id", body = updates)
+                } catch (e: Exception) {
+                    // Supabase sync failed, but local update succeeded
+                }
+            }
             Unit
         }
     }
 
     suspend fun deleteConfig(id: String): Result<Unit> {
-        val tokenValue = sessionManager.getToken()
-            ?: return Result.failure(Exception("Auth token missing"))
-            
-        val token = "Bearer $tokenValue"
-        
         return runCatching {
-            restApi.deleteApiConfig(BuildConfig.SUPABASE_ANON_KEY, token, idFilter = "eq.$id")
+            // Delete from local first
+            aiConfigDao.deleteConfigById(id)
+            
+            // Try to sync to Supabase if logged in
+            val tokenValue = sessionManager.getToken()
+            if (tokenValue != null) {
+                val token = "Bearer $tokenValue"
+                try {
+                    restApi.deleteApiConfig(BuildConfig.SUPABASE_ANON_KEY, token, idFilter = "eq.$id")
+                } catch (e: Exception) {
+                    // Supabase sync failed, but local delete succeeded
+                }
+            }
+            Unit
         }
     }
 
