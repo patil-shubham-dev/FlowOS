@@ -72,10 +72,10 @@ data class LocalMessage(
 data class LocalMemory(
     @PrimaryKey val id: String,
     val userId: String,
-    val key: String,
-    val value: String,
-    val category: String = "general",
-    val importanceScore: Float = 1.0f,
+    val content: String,
+    val embedding: String, // Stored as JSON array of floats
+    val type: String = "fact", // "preference", "fact", "goal", "task", "context"
+    val importance: Float = 1.0f,
     val lastUsed: Long = System.currentTimeMillis(),
     val timestamp: Long = System.currentTimeMillis()
 )

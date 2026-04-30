@@ -12,6 +12,9 @@ data class TaskItem(
     val category: String,
     val completed: Boolean,
     val priority: Int = 0,
+    val energyRequired: Int = 5,
+    val timeBlock: String = "Morning",
+    val scheduledTime: String? = null,
     val sortOrder: Int = 0
 )
 
@@ -20,7 +23,10 @@ data class HabitItem(
     val userId: String,
     val name: String,
     val streak: Int,
-    val completedToday: Boolean
+    val completedToday: Boolean,
+    val timeBlock: String = "Morning",
+    val scheduledTime: String? = null,
+    val sortOrder: Int = 0
 )
 
 data class DashboardStats(

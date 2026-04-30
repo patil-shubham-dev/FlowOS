@@ -10,6 +10,7 @@ import com.todo.dailyroutine.data.local.dao.AiConfigDao
 import com.todo.dailyroutine.data.local.entity.LocalAiConfig
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.first
 import java.util.UUID
 
 class AiConfigRepository(
@@ -39,13 +40,11 @@ class AiConfigRepository(
     }
 
     suspend fun getConfigs(): Result<List<UserApiConfig>> {
-        // Try local first
         return try {
-            val localConfigs = aiConfigDao.getAllConfigs().firstOrNull() ?: emptyList()
+            val localConfigs = aiConfigDao.getAllConfigs().first()
             if (localConfigs.isNotEmpty()) {
                 Result.success(localConfigs.map { it.toModel() })
             } else {
-                // Fallback to Supabase if local is empty
                 val userId = sessionManager.getUserId()
                     ?: return Result.failure(Exception("User not logged in"))
                 val tokenValue = sessionManager.getToken()
@@ -66,7 +65,6 @@ class AiConfigRepository(
         val userId = sessionManager.getUserId() ?: "local_user"
         
         return runCatching {
-            // Save to local Room database first
             val configId = if (config.id.isEmpty()) UUID.randomUUID().toString() else config.id
             val localConfig = LocalAiConfig(
                 id = configId,
@@ -80,14 +78,12 @@ class AiConfigRepository(
                 syncStatus = 0
             )
             
-            // Deactivate all other configs if this one is active
             if (config.isActive) {
                 aiConfigDao.deactivateAll()
             }
             
             aiConfigDao.insertConfig(localConfig)
             
-            // Try to sync to Supabase if logged in
             val tokenValue = sessionManager.getToken()
             if (tokenValue != null) {
                 val token = "Bearer $tokenValue"
@@ -95,7 +91,6 @@ class AiConfigRepository(
                 try {
                     restApi.createApiConfig(BuildConfig.SUPABASE_ANON_KEY, token, body = dto)
                 } catch (e: Exception) {
-                    // Supabase sync failed, but local save succeeded
                 }
             }
             
@@ -105,7 +100,6 @@ class AiConfigRepository(
 
     suspend fun updateConfig(id: String, updates: Map<String, Any>): Result<Unit> {
         return runCatching {
-            // Update local first
             val config = aiConfigDao.getConfigById(id)
             if (config != null) {
                 val updated = config.copy(
@@ -115,14 +109,12 @@ class AiConfigRepository(
                 aiConfigDao.insertConfig(updated)
             }
             
-            // Try to sync to Supabase if logged in
             val tokenValue = sessionManager.getToken()
             if (tokenValue != null) {
                 val token = "Bearer $tokenValue"
                 try {
                     restApi.updateApiConfig(BuildConfig.SUPABASE_ANON_KEY, token, idFilter = "eq.$id", body = updates)
                 } catch (e: Exception) {
-                    // Supabase sync failed, but local update succeeded
                 }
             }
             Unit
@@ -131,17 +123,14 @@ class AiConfigRepository(
 
     suspend fun deleteConfig(id: String): Result<Unit> {
         return runCatching {
-            // Delete from local first
             aiConfigDao.deleteConfigById(id)
             
-            // Try to sync to Supabase if logged in
             val tokenValue = sessionManager.getToken()
             if (tokenValue != null) {
                 val token = "Bearer $tokenValue"
                 try {
                     restApi.deleteApiConfig(BuildConfig.SUPABASE_ANON_KEY, token, idFilter = "eq.$id")
                 } catch (e: Exception) {
-                    // Supabase sync failed, but local delete succeeded
                 }
             }
             Unit

@@ -1,110 +1,146 @@
 package com.todo.dailyroutine.ui.screens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Bolt
+import androidx.compose.material.icons.filled.Cyclone
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.todo.dailyroutine.ui.viewmodel.*
 import com.todo.dailyroutine.ui.components.*
+import com.todo.dailyroutine.ui.theme.*
 
 @Composable
 fun DashboardScreen(homeViewModel: HomeViewModel, aiViewModel: AiViewModel) {
     val state by homeViewModel.uiState.collectAsState()
-    val completedTasks = state.tasks.count { it.completed }
-    val completedHabits = state.habits.count { it.completedToday }
-    val totalTasks = state.tasks.size
-    val totalHabits = state.habits.size
-    val overallItems = totalTasks + totalHabits
-    val overallCompleted = completedTasks + completedHabits
-    val syncProgress = if (overallItems > 0) overallCompleted.toFloat() / overallItems else 0f
-    val taskProgress = if (totalTasks > 0) completedTasks.toFloat() / totalTasks else 0f
-    val vibeProgress = if (totalHabits > 0) completedHabits.toFloat() / totalHabits else syncProgress
-    val flowScore = state.stats.progressPercent
-
-    DashboardScaffold(title = "Neurostate") {
-        item {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                BrainStateOrb(
-                    flowScore = flowScore,
-                    syncProgress = syncProgress,
-                    flowHoursProgress = taskProgress,
-                    vibeProgress = vibeProgress,
-                    modifier = Modifier.size(240.dp)
-                )
-            }
-        }
-
-        item {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                FlowStatCard("Sync", "${(syncProgress * 100).toInt()}%", Color(0xFF30D158), Modifier.fillMaxWidth())
+    
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(DeepBackground)
+    ) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(24.dp)
+        ) {
+            // Header
+            item {
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .statusBarsPadding()
+                        .padding(vertical = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    FlowStatCard("Flow", "$completedTasks/$totalTasks", Color(0xFF5B9CFF), Modifier.weight(1f))
-                    FlowStatCard("Rituals", "$completedHabits/$totalHabits", Color(0xFFFF9500), Modifier.weight(1f))
+                    Column {
+                        Text("Protocol", style = PremiumTypography.labelMedium, color = TextSecondary)
+                        Text("Operational", style = PremiumTypography.headlineMedium)
+                    }
+                    Surface(
+                        modifier = Modifier.size(48.dp),
+                        shape = CircleShape,
+                        color = SurfaceDark
+                    ) {
+                        Icon(Icons.Default.Cyclone, contentDescription = null, tint = AccentFlow, modifier = Modifier.padding(12.dp))
+                    }
                 }
             }
-        }
 
-        item {
-            FlowProgressHeader(
-                ritualsDone = completedHabits,
-                ritualsTotal = totalHabits,
-                objectivesDone = completedTasks,
-                objectivesTotal = totalTasks,
-                flowScore = flowScore,
-                overallProgress = syncProgress,
-                modifier = Modifier.fillMaxWidth()
-            )
-        }
+            // Core Metrics
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    MetricCard(
+                        label = "Sync",
+                        value = "${state.stats.progressPercent}%",
+                        modifier = Modifier.weight(1f),
+                        color = Color(0xFF30D158)
+                    )
+                    MetricCard(
+                        label = "Flow",
+                        value = "${state.tasks.count { it.completed }}/${state.tasks.size}",
+                        modifier = Modifier.weight(1f),
+                        color = AccentFlow
+                    )
+                }
+            }
 
-        item {
-            if (state.nextAction.isNotBlank()) {
+            // Brain State Visualization
+            item {
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(280.dp),
+                    shape = RoundedCornerShape(32.dp),
+                    color = SurfaceDark,
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.05f))
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        BrainStateOrb(
+                            flowScore = state.stats.progressPercent,
+                            syncProgress = state.stats.progressPercent / 100f,
+                            flowHoursProgress = 0.7f,
+                            vibeProgress = 0.8f,
+                            modifier = Modifier.size(220.dp)
+                        )
+                    }
+                }
+            }
+
+            // Next Best Action
+            item {
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
-                    color = Color(0xFF7C5CFF).copy(alpha = 0.15f),
-                    shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF7C5CFF).copy(alpha = 0.3f))
+                    shape = RoundedCornerShape(24.dp),
+                    color = AccentFlow.copy(alpha = 0.1f),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, AccentFlow.copy(alpha = 0.2f))
                 ) {
                     Row(
-                        modifier = Modifier.padding(16.dp),
+                        modifier = Modifier.padding(20.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(
-                            androidx.compose.material.icons.filled.Bolt,
-                            contentDescription = null,
-                            tint = Color(0xFF7C5CFF),
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(Modifier.width(12.dp))
+                        Icon(Icons.Default.Bolt, contentDescription = null, tint = AccentFlow)
+                        Spacer(Modifier.width(16.dp))
                         Column {
-                            Text(
-                                "Next Best Action",
-                                style = androidx.compose.material3.MaterialTheme.typography.labelSmall,
-                                color = Color.White
-                            )
-                            Text(
-                                state.nextAction,
-                                style = androidx.compose.material3.MaterialTheme.typography.labelSmall,
-                                color = com.todo.dailyroutine.ui.theme.TextSecondary
-                            )
+                            Text("Next Best Action", style = PremiumTypography.labelMedium, color = AccentFlow)
+                            Text(state.nextBestAction, style = PremiumTypography.bodyLarge, fontWeight = FontWeight.Medium)
                         }
                     }
                 }
             }
+            
+            item { Spacer(Modifier.height(80.dp)) }
         }
+    }
+}
 
-        item { Spacer(Modifier.height(20.dp)) }
+@Composable
+fun MetricCard(label: String, value: String, modifier: Modifier, color: Color) {
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(24.dp),
+        color = SurfaceDark,
+        border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.05f))
+    ) {
+        Column(modifier = Modifier.padding(20.dp)) {
+            Text(label, style = PremiumTypography.labelMedium, color = TextSecondary)
+            Spacer(Modifier.height(4.dp))
+            Text(value, style = PremiumTypography.headlineMedium, color = color)
+        }
     }
 }

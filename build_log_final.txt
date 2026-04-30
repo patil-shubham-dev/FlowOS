@@ -1,0 +1,124 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.2/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preDebugBuild UP-TO-DATE
+> Task :app:mergeDebugNativeDebugMetadata NO-SOURCE
+> Task :app:checkKotlinGradlePluginConfigurationErrors
+> Task :app:generateDebugBuildConfig UP-TO-DATE
+> Task :app:checkDebugAarMetadata UP-TO-DATE
+> Task :app:generateDebugResValues UP-TO-DATE
+> Task :app:mapDebugSourceSetPaths UP-TO-DATE
+> Task :app:generateDebugResources UP-TO-DATE
+> Task :app:mergeDebugResources UP-TO-DATE
+> Task :app:packageDebugResources UP-TO-DATE
+> Task :app:parseDebugLocalResources UP-TO-DATE
+> Task :app:createDebugCompatibleScreenManifests UP-TO-DATE
+> Task :app:extractDeepLinksDebug UP-TO-DATE
+> Task :app:processDebugMainManifest UP-TO-DATE
+> Task :app:processDebugManifest UP-TO-DATE
+> Task :app:processDebugManifestForPackage UP-TO-DATE
+> Task :app:processDebugResources UP-TO-DATE
+> Task :app:javaPreCompileDebug UP-TO-DATE
+> Task :app:mergeDebugShaders UP-TO-DATE
+> Task :app:compileDebugShaders NO-SOURCE
+> Task :app:generateDebugAssets UP-TO-DATE
+> Task :app:mergeDebugAssets UP-TO-DATE
+> Task :app:compressDebugAssets UP-TO-DATE
+> Task :app:desugarDebugFileDependencies UP-TO-DATE
+> Task :app:checkDebugDuplicateClasses UP-TO-DATE
+> Task :app:mergeExtDexDebug UP-TO-DATE
+> Task :app:mergeLibDexDebug UP-TO-DATE
+> Task :app:mergeDebugJniLibFolders UP-TO-DATE
+> Task :app:mergeDebugNativeLibs UP-TO-DATE
+> Task :app:stripDebugDebugSymbols UP-TO-DATE
+> Task :app:validateSigningDebug UP-TO-DATE
+> Task :app:writeDebugAppMetadata UP-TO-DATE
+> Task :app:writeDebugSigningConfigVersions UP-TO-DATE
+> Task :app:kaptGenerateStubsDebugKotlin
+> Task :app:kaptDebugKotlin
+
+> Task :app:compileDebugKotlin FAILED
+e: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/core/AppContainer.kt:65:13 Type mismatch: inferred type is MemoryDao but SummaryDao was expected
+e: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/core/AppContainer.kt:66:13 Type mismatch: inferred type is SummaryDao but VectorMemoryManager was expected
+e: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/data/local/Mappers.kt:15:22 Unresolved reference: energyRequired
+e: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/data/local/Mappers.kt:16:17 Unresolved reference: timeBlock
+e: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/data/local/Mappers.kt:17:21 Unresolved reference: scheduledTime
+e: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/data/local/Mappers.kt:39:17 Unresolved reference: timeBlock
+e: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/data/local/Mappers.kt:40:21 Unresolved reference: scheduledTime
+e: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/data/local/Mappers.kt:41:17 Unresolved reference: sortOrder
+e: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/data/repository/AiConfigRepository.kt:44:60 Unresolved reference. None of the following candidates is applicable because of receiver type mismatch: 
+public fun <T> Array<out TypeVariable(T)>.firstOrNull(): TypeVariable(T)? defined in kotlin.collections
+public inline fun <T> Array<out TypeVariable(T)>.firstOrNull(predicate: (TypeVariable(T)) -> Boolean): TypeVariable(T)? defined in kotlin.collections
+public fun BooleanArray.firstOrNull(): Boolean? defined in kotlin.collections
+public inline fun BooleanArray.firstOrNull(predicate: (Boolean) -> Boolean): Boolean? defined in kotlin.collections
+public fun ByteArray.firstOrNull(): Byte? defined in kotlin.collections
+public inline fun ByteArray.firstOrNull(predicate: (Byte) -> Boolean): Byte? defined in kotlin.collections
+public fun CharArray.firstOrNull(): Char? defined in kotlin.collections
+public inline fun CharArray.firstOrNull(predicate: (Char) -> Boolean): Char? defined in kotlin.collections
+public fun CharSequence.firstOrNull(): Char? defined in kotlin.text
+public inline fun CharSequence.firstOrNull(predicate: (Char) -> Boolean): Char? defined in kotlin.text
+public fun DoubleArray.firstOrNull(): Double? defined in kotlin.collections
+public inline fun DoubleArray.firstOrNull(predicate: (Double) -> Boolean): Double? defined in kotlin.collections
+public fun FloatArray.firstOrNull(): Float? defined in kotlin.collections
+public inline fun FloatArray.firstOrNull(predicate: (Float) -> Boolean): Float? defined in kotlin.collections
+public fun IntArray.firstOrNull(): Int? defined in kotlin.collections
+public inline fun IntArray.firstOrNull(predicate: (Int) -> Boolean): Int? defined in kotlin.collections
+public fun LongArray.firstOrNull(): Long? defined in kotlin.collections
+public inline fun LongArray.firstOrNull(predicate: (Long) -> Boolean): Long? defined in kotlin.collections
+public fun ShortArray.firstOrNull(): Short? defined in kotlin.collections
+public inline fun ShortArray.firstOrNull(predicate: (Short) -> Boolean): Short? defined in kotlin.collections
+public fun UByteArray.firstOrNull(): UByte? defined in kotlin.collections
+public inline fun UByteArray.firstOrNull(predicate: (UByte) -> Boolean): UByte? defined in kotlin.collections
+public fun UIntArray.firstOrNull(): UInt? defined in kotlin.collections
+public inline fun UIntArray.firstOrNull(predicate: (UInt) -> Boolean): UInt? defined in kotlin.collections
+public fun ULongArray.firstOrNull(): ULong? defined in kotlin.collections
+public inline fun ULongArray.firstOrNull(predicate: (ULong) -> Boolean): ULong? defined in kotlin.collections
+public fun UShortArray.firstOrNull(): UShort? defined in kotlin.collections
+public inline fun UShortArray.firstOrNull(predicate: (UShort) -> Boolean): UShort? defined in kotlin.collections
+public fun <T> Iterable<TypeVariable(T)>.firstOrNull(): TypeVariable(T)? defined in kotlin.collections
+public inline fun <T> Iterable<TypeVariable(T)>.firstOrNull(predicate: (TypeVariable(T)) -> Boolean): TypeVariable(T)? defined in kotlin.collections
+public fun <T> List<TypeVariable(T)>.firstOrNull(): TypeVariable(T)? defined in kotlin.collections
+public fun CharProgression.firstOrNull(): Char? defined in kotlin.ranges
+public fun IntProgression.firstOrNull(): Int? defined in kotlin.ranges
+public fun LongProgression.firstOrNull(): Long? defined in kotlin.ranges
+public fun UIntProgression.firstOrNull(): UInt? defined in kotlin.ranges
+public fun ULongProgression.firstOrNull(): ULong? defined in kotlin.ranges
+public fun <T> Sequence<TypeVariable(T)>.firstOrNull(): TypeVariable(T)? defined in kotlin.sequences
+public inline fun <T> Sequence<TypeVariable(T)>.firstOrNull(predicate: (TypeVariable(T)) -> Boolean): TypeVariable(T)? defined in kotlin.sequences
+e: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/data/repository/AiConfigRepository.kt:44:77 Not enough information to infer type variable T
+e: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/data/repository/AiConfigRepository.kt:46:51 Unresolved reference: it
+e: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/ui/components/CommonComponents.kt:172:59 Unresolved reference: TextTertiary
+e: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/ui/components/CommonComponents.kt:191:43 Unresolved reference: TextTertiary
+e: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/ui/components/CommonComponents.kt:241:79 Unresolved reference: TextTertiary
+e: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/ui/components/CommonComponents.kt:274:60 Unresolved reference: TextTertiary
+e: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/ui/components/FloatingPillNav.kt:53:50 Unresolved reference: TextTertiary
+e: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/ui/screens/DashboardScreen.kt:53:33 Unresolved reference: CircleShape
+e: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/ui/screens/DashboardScreen.kt:120:40 Unresolved reference: nextAction
+e: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/ui/screens/JournalScreen.kt:73:50 Unresolved reference: TextTertiary
+e: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/ui/screens/JournalScreen.kt:97:91 Unresolved reference: TextTertiary
+e: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/ui/screens/OracleInterviewScreen.kt:37:18 Unresolved reference: verticalScroll
+e: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/ui/screens/OracleInterviewScreen.kt:84:52 Unresolved reference: TextTertiary
+e: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/ui/screens/OracleInterviewScreen.kt:89:79 Unresolved reference: TextTertiary
+e: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/ui/screens/SubComponents.kt:130:85 Unresolved reference: TextTertiary
+e: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/ui/screens/SubComponents.kt:147:73 Unresolved reference: TextTertiary
+e: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/ui/screens/SubComponents.kt:177:91 Unresolved reference: TextTertiary
+e: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/ui/screens/SubComponents.kt:199:76 Unresolved reference: TextTertiary
+e: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/ui/screens/SubComponents.kt:258:21 Unresolved reference: TextTertiary
+e: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/ui/theme/Theme.kt:16:16 Unresolved reference: TextTertiary
+e: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/ui/theme/Theme.kt:25:15 Unresolved reference: TextTertiary
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:compileDebugKotlin'.
+> A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
+   > Compilation error. See log for more details
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 37s
+31 actionable tasks: 4 executed, 27 up-to-date

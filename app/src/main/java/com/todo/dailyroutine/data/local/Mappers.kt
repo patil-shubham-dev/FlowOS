@@ -27,6 +27,9 @@ fun LocalTask.toModel() = TaskItem(
     category = category,
     completed = completed,
     priority = priority,
+    energyRequired = energyRequired,
+    timeBlock = timeBlock,
+    scheduledTime = scheduledTime,
     sortOrder = sortOrder
 )
 
@@ -48,5 +51,8 @@ fun LocalHabit.toModel() = HabitItem(
     userId = userId,
     name = name,
     streak = streak,
-    completedToday = completedToday
+    completedToday = completedToday,
+    timeBlock = timeBlock,
+    scheduledTime = scheduledTime,
+    sortOrder = sortOrder
 )

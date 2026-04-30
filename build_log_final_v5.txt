@@ -1,0 +1,63 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.2/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preDebugBuild UP-TO-DATE
+> Task :app:mergeDebugNativeDebugMetadata NO-SOURCE
+> Task :app:checkKotlinGradlePluginConfigurationErrors
+> Task :app:generateDebugBuildConfig UP-TO-DATE
+> Task :app:checkDebugAarMetadata UP-TO-DATE
+> Task :app:generateDebugResValues UP-TO-DATE
+> Task :app:mapDebugSourceSetPaths UP-TO-DATE
+> Task :app:generateDebugResources UP-TO-DATE
+> Task :app:mergeDebugResources UP-TO-DATE
+> Task :app:packageDebugResources UP-TO-DATE
+> Task :app:parseDebugLocalResources UP-TO-DATE
+> Task :app:createDebugCompatibleScreenManifests UP-TO-DATE
+> Task :app:extractDeepLinksDebug UP-TO-DATE
+> Task :app:processDebugMainManifest UP-TO-DATE
+> Task :app:processDebugManifest UP-TO-DATE
+> Task :app:processDebugManifestForPackage UP-TO-DATE
+> Task :app:processDebugResources UP-TO-DATE
+> Task :app:javaPreCompileDebug UP-TO-DATE
+> Task :app:mergeDebugShaders UP-TO-DATE
+> Task :app:compileDebugShaders NO-SOURCE
+> Task :app:generateDebugAssets UP-TO-DATE
+> Task :app:mergeDebugAssets UP-TO-DATE
+> Task :app:compressDebugAssets UP-TO-DATE
+> Task :app:desugarDebugFileDependencies UP-TO-DATE
+> Task :app:checkDebugDuplicateClasses UP-TO-DATE
+> Task :app:mergeExtDexDebug UP-TO-DATE
+> Task :app:mergeLibDexDebug UP-TO-DATE
+> Task :app:mergeDebugJniLibFolders UP-TO-DATE
+> Task :app:mergeDebugNativeLibs UP-TO-DATE
+> Task :app:stripDebugDebugSymbols UP-TO-DATE
+> Task :app:validateSigningDebug UP-TO-DATE
+> Task :app:writeDebugAppMetadata UP-TO-DATE
+> Task :app:writeDebugSigningConfigVersions UP-TO-DATE
+> Task :app:kaptGenerateStubsDebugKotlin
+> Task :app:kaptDebugKotlin
+
+> Task :app:compileDebugKotlin
+w: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/domain/vector/SelfLearningEngine.kt:49:39 Parameter 'userId' is never used
+w: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/domain/vector/SelfLearningEngine.kt:65:17 Variable 'importance' is never used
+w: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/domain/vector/SelfLearningEngine.kt:66:17 Variable 'type' is never used
+w: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/ui/components/CommonComponents.kt:40:5 Parameter 'color' is never used
+w: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/ui/screens/AiScreen.kt:32:9 Variable 'scope' is never used
+w: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/ui/screens/DashboardScreen.kt:25:51 Parameter 'aiViewModel' is never used
+w: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/ui/screens/JournalScreen.kt:27:48 Parameter 'authViewModel' is never used
+w: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/ui/screens/SubComponents.kt:32:5 Parameter 'flowHoursProgress' is never used
+w: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/ui/screens/SubComponents.kt:33:5 Parameter 'vibeProgress' is never used
+w: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/ui/viewmodel/JournalViewModel.kt:88:73 Unchecked cast: JournalViewModel to T
+
+> Task :app:compileDebugJavaWithJavac
+> Task :app:dexBuilderDebug
+> Task :app:mergeDebugGlobalSynthetics
+> Task :app:processDebugJavaRes
+> Task :app:mergeProjectDexDebug
+> Task :app:mergeDebugJavaResource
+> Task :app:packageDebug
+> Task :app:createDebugApkListingFileRedirect
+> Task :app:assembleDebug
+
+BUILD SUCCESSFUL in 1m 4s
+39 actionable tasks: 12 executed, 27 up-to-date

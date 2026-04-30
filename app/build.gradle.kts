@@ -105,6 +105,10 @@ dependencies {
     implementation("org.burnoutcrew.composereorderable:reorderable:0.9.6")
     implementation("com.mohamedrejeb.richeditor:richeditor-compose:1.0.0-rc05")
     implementation("com.airbnb.android:lottie-compose:6.4.0")
+    
+    // On-Device AI & Vector Math
+    implementation("com.microsoft.onnxruntime:onnxruntime-android:1.18.0")
+    implementation("org.apache.commons:commons-math3:3.6.1")
 
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.2.1")

@@ -9,6 +9,8 @@ import com.todo.dailyroutine.notifications.FlowNotificationEngine
 import com.todo.dailyroutine.domain.ai.*
 import com.todo.dailyroutine.util.VoiceToTextManager
 import com.todo.dailyroutine.ui.viewmodel.JournalViewModelFactory
+import com.todo.dailyroutine.domain.vector.VectorEngine
+import com.todo.dailyroutine.domain.vector.VectorMemoryManager
 
 class AppContainer(private val context: Context) {
     init {
@@ -58,12 +60,15 @@ class AppContainer(private val context: Context) {
         AiToolController(oracleToolExecutor, aiRepository, sessionManager)
     }
 
+    val vectorEngine by lazy { VectorEngine(context) }
+    val vectorMemoryManager by lazy { VectorMemoryManager(db.memoryDao(), vectorEngine) }
+
     val aiContextManager by lazy { 
         AiContextManager(
             aiRepository,
             db.messageDao(),
-            db.memoryDao(),
-            db.summaryDao()
+            db.summaryDao(),
+            vectorMemoryManager
         )
     }
 

@@ -95,19 +95,22 @@ interface MessageDao {
 
 @Dao
 interface MemoryDao {
-    @Query("SELECT * FROM ai_memories ORDER BY (importanceScore * 0.7 + (timestamp / 10000000000.0) * 0.3) DESC LIMIT 10")
-    suspend fun getTopMemories(): List<LocalMemory>
+    @Query("SELECT * FROM ai_memories WHERE userId = :userId ORDER BY importance DESC, timestamp DESC LIMIT 20")
+    suspend fun getAllMemories(userId: String): List<LocalMemory>
 
-    @Query("SELECT * FROM ai_memories WHERE key LIKE :query OR value LIKE :query ORDER BY importanceScore DESC LIMIT 3")
-    suspend fun searchMemories(query: String): List<LocalMemory>
+    @Query("SELECT * FROM ai_memories WHERE id = :id LIMIT 1")
+    suspend fun getMemoryById(id: String): LocalMemory?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun saveMemory(memory: LocalMemory)
 
-    @Query("UPDATE ai_memories SET importanceScore = importanceScore * 0.95")
+    @Query("DELETE FROM ai_memories WHERE id = :id")
+    suspend fun deleteMemory(id: String)
+
+    @Query("UPDATE ai_memories SET importance = importance * 0.95")
     suspend fun decayMemories()
     
-    @Query("UPDATE ai_memories SET importanceScore = importanceScore + 0.2, lastUsed = :now WHERE id = :id")
+    @Query("UPDATE ai_memories SET importance = importance + 0.2, lastUsed = :now WHERE id = :id")
     suspend fun reinforceMemory(id: String, now: Long = System.currentTimeMillis())
 }
 

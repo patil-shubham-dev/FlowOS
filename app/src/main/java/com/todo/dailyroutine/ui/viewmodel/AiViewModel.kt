@@ -40,7 +40,6 @@ class AiViewModel(
 
     init {
         loadConfigs()
-        loadChatHistory()
     }
 
     private val _uiState = MutableStateFlow(AiUiState())
@@ -53,65 +52,9 @@ class AiViewModel(
                 _uiState.value = _uiState.value.copy(
                     apiConfigs = configs,
                     activeConfig = active,
-                    availableModels = active?.let { getModelsForProvider(it.providerName) } ?: emptyList(),
+                    availableModels = active?.let { aiRepository.fetchModels(it) } ?: emptyList(),
                     selectedModel = active?.model ?: "default"
                 )
-            }
-        }
-    }
-
-    private fun loadChatHistory() {
-        // Implementation for chat history recovery
-    }
-
-    fun getModelsForProvider(provider: String): List<String> {
-        return when (provider) {
-            "Claude" -> listOf("claude-3-opus-20240229", "claude-3-sonnet-20240229", "claude-3-haiku-20240307")
-            "OpenAI" -> listOf("gpt-4-turbo", "gpt-4", "gpt-3.5-turbo")
-            "Groq" -> listOf("llama3-70b-8192", "llama3-8b-8219", "mixtral-8x7b-32768")
-            else -> listOf("default")
-        }
-    }
-
-    fun autoDetectProvider(apiKey: String): UserApiConfig {
-        val provider = when {
-            apiKey.startsWith("sk-ant") -> "Claude"
-            apiKey.startsWith("sk-") -> "OpenAI"
-            apiKey.startsWith("gsk_") -> "Groq"
-            else -> "Generic"
-        }
-        val baseUrl = when(provider) {
-            "Claude" -> "https://api.anthropic.com/v1/messages"
-            "OpenAI" -> "https://api.openai.com/v1/chat/completions"
-            "Groq" -> "https://api.groq.com/openai/v1/chat/completions"
-            else -> ""
-        }
-        val models = getModelsForProvider(provider)
-        return UserApiConfig(
-            providerName = provider, 
-            baseUrl = baseUrl, 
-            apiKey = apiKey, 
-            model = models.firstOrNull() ?: "default",
-            isActive = true
-        )
-    }
-
-    fun updateSelectedModel(model: String) {
-        _uiState.value = _uiState.value.copy(selectedModel = model)
-        val currentConfig = _uiState.value.activeConfig
-        if (currentConfig != null) {
-            saveConfig(currentConfig.copy(model = model))
-        }
-    }
-
-    fun saveConfig(config: UserApiConfig) {
-        _uiState.value = _uiState.value.copy(loading = true)
-        viewModelScope.launch {
-            aiConfigRepository.saveConfig(config).onSuccess {
-                loadConfigs()
-                _uiState.value = _uiState.value.copy(loading = false, testResult = "Intelligence synchronized")
-            }.onFailure {
-                _uiState.value = _uiState.value.copy(loading = false, error = "Mirroring failed: ${it.message}")
             }
         }
     }
@@ -135,49 +78,20 @@ class AiViewModel(
             val userId = "user_default"
             contextManager.processNewMessage(userId, "user", userContent)
             
-            // Intelligence Loop for tool calling
-            processAiResponse(userId, userContent)
-        }
-    }
-
-    private suspend fun processAiResponse(userId: String, input: String) {
-        val config = _uiState.value.activeConfig
-        val tools = toolController.getToolSchemas()
-        
-        aiRepository.chatWithTools(input, tools, config).onSuccess { raw ->
-            val gson = Gson()
-            try {
-                val json = gson.fromJson(raw, Map::class.java)
-                val choices = json["choices"] as? List<*>
-                val message = (choices?.firstOrNull() as? Map<*, *>)?.get("message") as? Map<*, *>
-                val content = message?.get("content") as? String
-                val toolCallsJson = message?.get("tool_calls") as? List<*>
-                
-                content?.let {
-                    val aiMessage = ChatMessage("assistant", it)
-                    _uiState.value = _uiState.value.copy(chatHistory = _uiState.value.chatHistory + aiMessage)
-                    contextManager.processNewMessage(userId, "assistant", it)
-                }
-
-                if (toolCallsJson != null) {
-                    val toolCalls = toolCallsJson.map { 
-                        gson.fromJson(gson.toJson(it), AiToolCall::class.java) 
-                    }
-                    val results = toolController.handleToolCalls(toolCalls)
-                    
-                    // Recursive call to AI for "Tool Execution Successful" or similar logic could go here
-                    val executionSummary = "The following actions were performed: ${results.joinToString { it.toolCallId }}"
-                    val systemAck = ChatMessage("system", executionSummary)
-                    _uiState.value = _uiState.value.copy(chatHistory = _uiState.value.chatHistory + systemAck)
-                }
-            } catch (e: Exception) {
-                // Fallback to extraction
-                val content = raw // Simplification
-                _uiState.value = _uiState.value.copy(chatHistory = _uiState.value.chatHistory + ChatMessage("assistant", content))
+            val config = _uiState.value.activeConfig
+            aiRepository.chat(userContent, config).onSuccess { content ->
+                val aiMessage = ChatMessage("assistant", content)
+                _uiState.value = _uiState.value.copy(
+                    chatHistory = _uiState.value.chatHistory + aiMessage,
+                    loading = false
+                )
+                contextManager.processNewMessage(userId, "assistant", content)
+            }.onFailure {
+                _uiState.value = _uiState.value.copy(
+                    loading = false,
+                    error = it.message
+                )
             }
-            _uiState.value = _uiState.value.copy(loading = false)
-        }.onFailure {
-            _uiState.value = _uiState.value.copy(loading = false, error = it.message)
         }
     }
 }

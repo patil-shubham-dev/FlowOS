@@ -1,0 +1,218 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.2/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preDebugBuild UP-TO-DATE
+> Task :app:mergeDebugNativeDebugMetadata NO-SOURCE
+> Task :app:checkKotlinGradlePluginConfigurationErrors
+> Task :app:generateDebugBuildConfig UP-TO-DATE
+> Task :app:checkDebugAarMetadata UP-TO-DATE
+> Task :app:generateDebugResValues UP-TO-DATE
+> Task :app:mapDebugSourceSetPaths UP-TO-DATE
+> Task :app:generateDebugResources UP-TO-DATE
+> Task :app:mergeDebugResources UP-TO-DATE
+> Task :app:packageDebugResources UP-TO-DATE
+> Task :app:parseDebugLocalResources UP-TO-DATE
+> Task :app:createDebugCompatibleScreenManifests UP-TO-DATE
+> Task :app:extractDeepLinksDebug UP-TO-DATE
+> Task :app:processDebugMainManifest UP-TO-DATE
+> Task :app:processDebugManifest UP-TO-DATE
+> Task :app:processDebugManifestForPackage UP-TO-DATE
+> Task :app:processDebugResources UP-TO-DATE
+> Task :app:kaptGenerateStubsDebugKotlin UP-TO-DATE
+> Task :app:kaptDebugKotlin UP-TO-DATE
+> Task :app:javaPreCompileDebug UP-TO-DATE
+> Task :app:mergeDebugShaders UP-TO-DATE
+> Task :app:compileDebugShaders NO-SOURCE
+> Task :app:generateDebugAssets UP-TO-DATE
+> Task :app:mergeDebugAssets UP-TO-DATE
+> Task :app:compressDebugAssets UP-TO-DATE
+> Task :app:desugarDebugFileDependencies UP-TO-DATE
+> Task :app:checkDebugDuplicateClasses UP-TO-DATE
+> Task :app:mergeExtDexDebug UP-TO-DATE
+> Task :app:mergeLibDexDebug UP-TO-DATE
+> Task :app:mergeDebugJniLibFolders UP-TO-DATE
+> Task :app:mergeDebugNativeLibs UP-TO-DATE
+> Task :app:stripDebugDebugSymbols UP-TO-DATE
+> Task :app:validateSigningDebug UP-TO-DATE
+> Task :app:writeDebugAppMetadata UP-TO-DATE
+> Task :app:writeDebugSigningConfigVersions UP-TO-DATE
+
+> Task :app:compileDebugKotlin
+e: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/core/AppContainer.kt:65:13 Type mismatch: inferred type is MemoryDao but SummaryDao was expected
+e: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/core/AppContainer.kt:66:13 Type mismatch: inferred type is SummaryDao but VectorMemoryManager was expected
+e: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/data/local/Mappers.kt:15:22 Unresolved reference: energyRequired
+e: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/data/local/Mappers.kt:16:17 Unresolved reference: timeBlock
+e: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/data/local/Mappers.kt:17:21 Unresolved reference: scheduledTime
+e: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/data/local/Mappers.kt:39:17 Unresolved reference: timeBlock
+e: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/data/local/Mappers.kt:40:21 Unresolved reference: scheduledTime
+e: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/data/local/Mappers.kt:41:17 Unresolved reference: sortOrder
+e: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/data/repository/AiConfigRepository.kt:44:60 Unresolved reference. None of the following candidates is applicable because of receiver type mismatch: 
+public fun <T> Array<out TypeVariable(T)>.firstOrNull(): TypeVariable(T)? defined in kotlin.collections
+public inline fun <T> Array<out TypeVariable(T)>.firstOrNull(predicate: (TypeVariable(T)) -> Boolean): TypeVariable(T)? defined in kotlin.collections
+public fun BooleanArray.firstOrNull(): Boolean? defined in kotlin.collections
+public inline fun BooleanArray.firstOrNull(predicate: (Boolean) -> Boolean): Boolean? defined in kotlin.collections
+public fun ByteArray.firstOrNull(): Byte? defined in kotlin.collections
+public inline fun ByteArray.firstOrNull(predicate: (Byte) -> Boolean): Byte? defined in kotlin.collections
+public fun CharArray.firstOrNull(): Char? defined in kotlin.collections
+public inline fun CharArray.firstOrNull(predicate: (Char) -> Boolean): Char? defined in kotlin.collections
+public fun CharSequence.firstOrNull(): Char? defined in kotlin.text
+public inline fun CharSequence.firstOrNull(predicate: (Char) -> Boolean): Char? defined in kotlin.text
+public fun DoubleArray.firstOrNull(): Double? defined in kotlin.collections
+public inline fun DoubleArray.firstOrNull(predicate: (Double) -> Boolean): Double? defined in kotlin.collections
+public fun FloatArray.firstOrNull(): Float? defined in kotlin.collections
+public inline fun FloatArray.firstOrNull(predicate: (Float) -> Boolean): Float? defined in kotlin.collections
+public fun IntArray.firstOrNull(): Int? defined in kotlin.collections
+public inline fun IntArray.firstOrNull(predicate: (Int) -> Boolean): Int? defined in kotlin.collections
+public fun LongArray.firstOrNull(): Long? defined in kotlin.collections
+public inline fun LongArray.firstOrNull(predicate: (Long) -> Boolean): Long? defined in kotlin.collections
+public fun ShortArray.firstOrNull(): Short? defined in kotlin.collections
+public inline fun ShortArray.firstOrNull(predicate: (Short) -> Boolean): Short? defined in kotlin.collections
+public fun UByteArray.firstOrNull(): UByte? defined in kotlin.collections
+public inline fun UByteArray.firstOrNull(predicate: (UByte) -> Boolean): UByte? defined in kotlin.collections
+public fun UIntArray.firstOrNull(): UInt? defined in kotlin.collections
+public inline fun UIntArray.firstOrNull(predicate: (UInt) -> Boolean): UInt? defined in kotlin.collections
+public fun ULongArray.firstOrNull(): ULong? defined in kotlin.collections
+public inline fun ULongArray.firstOrNull(predicate: (ULong) -> Boolean): ULong? defined in kotlin.collections
+public fun UShortArray.firstOrNull(): UShort? defined in kotlin.collections
+public inline fun UShortArray.firstOrNull(predicate: (UShort) -> Boolean): UShort? defined in kotlin.collections
+public fun <T> Iterable<TypeVariable(T)>.firstOrNull(): TypeVariable(T)? defined in kotlin.collections
+public inline fun <T> Iterable<TypeVariable(T)>.firstOrNull(predicate: (TypeVariable(T)) -> Boolean): TypeVariable(T)? defined in kotlin.collections
+public fun <T> List<TypeVariable(T)>.firstOrNull(): TypeVariable(T)? defined in kotlin.collections
+public fun CharProgression.firstOrNull(): Char? defined in kotlin.ranges
+public fun IntProgression.firstOrNull(): Int? defined in kotlin.ranges
+public fun LongProgression.firstOrNull(): Long? defined in kotlin.ranges
+public fun UIntProgression.firstOrNull(): UInt? defined in kotlin.ranges
+public fun ULongProgression.firstOrNull(): ULong? defined in kotlin.ranges
+public fun <T> Sequence<TypeVariable(T)>.firstOrNull(): TypeVariable(T)? defined in kotlin.sequences
+public inline fun <T> Sequence<TypeVariable(T)>.firstOrNull(predicate: (TypeVariable(T)) -> Boolean): TypeVariable(T)? defined in kotlin.sequences
+e: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/data/repository/AiConfigRepository.kt:44:77 Not enough information to infer type variable T
+e: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/data/repository/AiConfigRepository.kt:46:51 Unresolved reference: it
+e: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/ui/components/CommonComponents.kt:61:64 Overload resolution ambiguity: 
+public val TextSecondary: Color defined in com.todo.dailyroutine.ui.theme in file Color.kt
+public val TextSecondary: Color defined in com.todo.dailyroutine.ui.theme in file PremiumTheme.kt
+e: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/ui/components/CommonComponents.kt:88:64 Overload resolution ambiguity: 
+public val TextSecondary: Color defined in com.todo.dailyroutine.ui.theme in file Color.kt
+public val TextSecondary: Color defined in com.todo.dailyroutine.ui.theme in file PremiumTheme.kt
+e: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/ui/screens/AiScreen.kt:103:82 Overload resolution ambiguity: 
+public val TextSecondary: Color defined in com.todo.dailyroutine.ui.theme in file Color.kt
+public val TextSecondary: Color defined in com.todo.dailyroutine.ui.theme in file PremiumTheme.kt
+e: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/ui/screens/AiScreen.kt:114:76 Overload resolution ambiguity: 
+public val TextPrimary: Color defined in com.todo.dailyroutine.ui.theme in file Color.kt
+public val TextPrimary: Color defined in com.todo.dailyroutine.ui.theme in file PremiumTheme.kt
+e: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/ui/screens/AiScreen.kt:146:17 None of the following functions can be called with the arguments supplied: 
+public fun Text(text: AnnotatedString, modifier: Modifier = ..., color: Color = ..., fontSize: TextUnit = ..., fontStyle: FontStyle? = ..., fontWeight: FontWeight? = ..., fontFamily: FontFamily? = ..., letterSpacing: TextUnit = ..., textDecoration: TextDecoration? = ..., textAlign: TextAlign? = ..., lineHeight: TextUnit = ..., overflow: TextOverflow = ..., softWrap: Boolean = ..., maxLines: Int = ..., minLines: Int = ..., inlineContent: Map<String, InlineTextContent> = ..., onTextLayout: (TextLayoutResult) -> Unit = ..., style: TextStyle = ...): Unit defined in androidx.compose.material3
+public fun Text(text: String, modifier: Modifier = ..., color: Color = ..., fontSize: TextUnit = ..., fontStyle: FontStyle? = ..., fontWeight: FontWeight? = ..., fontFamily: FontFamily? = ..., letterSpacing: TextUnit = ..., textDecoration: TextDecoration? = ..., textAlign: TextAlign? = ..., lineHeight: TextUnit = ..., overflow: TextOverflow = ..., softWrap: Boolean = ..., maxLines: Int = ..., minLines: Int = ..., onTextLayout: ((TextLayoutResult) -> Unit)? = ..., style: TextStyle = ...): Unit defined in androidx.compose.material3
+e: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/ui/screens/AiScreen.kt:150:41 Overload resolution ambiguity: 
+public val TextPrimary: Color defined in com.todo.dailyroutine.ui.theme in file Color.kt
+public val TextPrimary: Color defined in com.todo.dailyroutine.ui.theme in file PremiumTheme.kt
+e: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/ui/screens/AiScreen.kt:150:58 Overload resolution ambiguity: 
+public val TextPrimary: Color defined in com.todo.dailyroutine.ui.theme in file Color.kt
+public val TextPrimary: Color defined in com.todo.dailyroutine.ui.theme in file PremiumTheme.kt
+e: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/ui/screens/AiScreen.kt:186:40 Overload resolution ambiguity: 
+public val TextPrimary: Color defined in com.todo.dailyroutine.ui.theme in file Color.kt
+public val TextPrimary: Color defined in com.todo.dailyroutine.ui.theme in file PremiumTheme.kt
+e: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/ui/screens/AiScreen.kt:187:42 Overload resolution ambiguity: 
+public val TextPrimary: Color defined in com.todo.dailyroutine.ui.theme in file Color.kt
+public val TextPrimary: Color defined in com.todo.dailyroutine.ui.theme in file PremiumTheme.kt
+e: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/ui/screens/AiScreen.kt:198:50 Overload resolution ambiguity: 
+public val TextPrimary: Color defined in com.todo.dailyroutine.ui.theme in file Color.kt
+public val TextPrimary: Color defined in com.todo.dailyroutine.ui.theme in file PremiumTheme.kt
+e: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/ui/screens/AuthScreen.kt:81:25 Overload resolution ambiguity: 
+public val TextSecondary: Color defined in com.todo.dailyroutine.ui.theme in file Color.kt
+public val TextSecondary: Color defined in com.todo.dailyroutine.ui.theme in file PremiumTheme.kt
+e: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/ui/screens/AuthScreen.kt:138:61 Overload resolution ambiguity: 
+public val TextSecondary: Color defined in com.todo.dailyroutine.ui.theme in file Color.kt
+public val TextSecondary: Color defined in com.todo.dailyroutine.ui.theme in file PremiumTheme.kt
+e: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/ui/screens/AuthScreen.kt:144:58 Overload resolution ambiguity: 
+public val TextSecondary: Color defined in com.todo.dailyroutine.ui.theme in file Color.kt
+public val TextSecondary: Color defined in com.todo.dailyroutine.ui.theme in file PremiumTheme.kt
+e: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/ui/screens/AuthScreen.kt:152:62 Overload resolution ambiguity: 
+public val TextSecondary: Color defined in com.todo.dailyroutine.ui.theme in file Color.kt
+public val TextSecondary: Color defined in com.todo.dailyroutine.ui.theme in file PremiumTheme.kt
+e: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/ui/screens/AuthScreen.kt:160:55 Overload resolution ambiguity: 
+public val TextSecondary: Color defined in com.todo.dailyroutine.ui.theme in file Color.kt
+public val TextSecondary: Color defined in com.todo.dailyroutine.ui.theme in file PremiumTheme.kt
+e: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/ui/screens/DashboardScreen.kt:48:89 Overload resolution ambiguity: 
+public val TextSecondary: Color defined in com.todo.dailyroutine.ui.theme in file Color.kt
+public val TextSecondary: Color defined in com.todo.dailyroutine.ui.theme in file PremiumTheme.kt
+e: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/ui/screens/DashboardScreen.kt:53:33 Unresolved reference: CircleShape
+e: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/ui/screens/DashboardScreen.kt:120:40 Unresolved reference: nextAction
+e: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/ui/screens/DashboardScreen.kt:140:72 Overload resolution ambiguity: 
+public val TextSecondary: Color defined in com.todo.dailyroutine.ui.theme in file Color.kt
+public val TextSecondary: Color defined in com.todo.dailyroutine.ui.theme in file PremiumTheme.kt
+e: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/ui/screens/OracleInterviewScreen.kt:37:18 Unresolved reference: verticalScroll
+e: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/ui/screens/OracleInterviewScreen.kt:113:80 Overload resolution ambiguity: 
+public val TextSecondary: Color defined in com.todo.dailyroutine.ui.theme in file Color.kt
+public val TextSecondary: Color defined in com.todo.dailyroutine.ui.theme in file PremiumTheme.kt
+e: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/ui/screens/OracleInterviewScreen.kt:119:81 Overload resolution ambiguity: 
+public val TextSecondary: Color defined in com.todo.dailyroutine.ui.theme in file Color.kt
+public val TextSecondary: Color defined in com.todo.dailyroutine.ui.theme in file PremiumTheme.kt
+e: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/ui/screens/ProfileScreen.kt:144:29 Overload resolution ambiguity: 
+public val TextSecondary: Color defined in com.todo.dailyroutine.ui.theme in file Color.kt
+public val TextSecondary: Color defined in com.todo.dailyroutine.ui.theme in file PremiumTheme.kt
+e: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/ui/screens/SubComponents.kt:155:25 Overload resolution ambiguity: 
+public val TextSecondary: Color defined in com.todo.dailyroutine.ui.theme in file Color.kt
+public val TextSecondary: Color defined in com.todo.dailyroutine.ui.theme in file PremiumTheme.kt
+e: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/ui/theme/Color.kt:11:5 Conflicting declarations: public val TextPrimary: Color, public val TextPrimary: Color
+e: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/ui/theme/Color.kt:12:5 Conflicting declarations: public val TextSecondary: Color, public val TextSecondary: Color
+e: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/ui/theme/PremiumTheme.kt:20:5 Conflicting declarations: public val TextPrimary: Color, public val TextPrimary: Color
+e: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/ui/theme/PremiumTheme.kt:21:5 Conflicting declarations: public val TextSecondary: Color, public val TextSecondary: Color
+e: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/ui/theme/PremiumTheme.kt:31:17 Overload resolution ambiguity: 
+public val TextPrimary: Color defined in com.todo.dailyroutine.ui.theme in file Color.kt
+public val TextPrimary: Color defined in com.todo.dailyroutine.ui.theme in file PremiumTheme.kt
+e: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/ui/theme/PremiumTheme.kt:38:17 Overload resolution ambiguity: 
+public val TextPrimary: Color defined in com.todo.dailyroutine.ui.theme in file Color.kt
+public val TextPrimary: Color defined in com.todo.dailyroutine.ui.theme in file PremiumTheme.kt
+e: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/ui/theme/PremiumTheme.kt:46:17 Overload resolution ambiguity: 
+public val TextPrimary: Color defined in com.todo.dailyroutine.ui.theme in file Color.kt
+public val TextPrimary: Color defined in com.todo.dailyroutine.ui.theme in file PremiumTheme.kt
+e: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/ui/theme/PremiumTheme.kt:54:17 Overload resolution ambiguity: 
+public val TextSecondary: Color defined in com.todo.dailyroutine.ui.theme in file Color.kt
+public val TextSecondary: Color defined in com.todo.dailyroutine.ui.theme in file PremiumTheme.kt
+e: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/ui/theme/Theme.kt:19:17 Overload resolution ambiguity: 
+public val TextPrimary: Color defined in com.todo.dailyroutine.ui.theme in file Color.kt
+public val TextPrimary: Color defined in com.todo.dailyroutine.ui.theme in file PremiumTheme.kt
+e: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/ui/theme/Theme.kt:20:19 Overload resolution ambiguity: 
+public val TextPrimary: Color defined in com.todo.dailyroutine.ui.theme in file Color.kt
+public val TextPrimary: Color defined in com.todo.dailyroutine.ui.theme in file PremiumTheme.kt
+e: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/ui/theme/Theme.kt:21:18 Overload resolution ambiguity: 
+public val TextPrimary: Color defined in com.todo.dailyroutine.ui.theme in file Color.kt
+public val TextPrimary: Color defined in com.todo.dailyroutine.ui.theme in file PremiumTheme.kt
+e: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/ui/theme/Theme.kt:22:20 Overload resolution ambiguity: 
+public val TextPrimary: Color defined in com.todo.dailyroutine.ui.theme in file Color.kt
+public val TextPrimary: Color defined in com.todo.dailyroutine.ui.theme in file PremiumTheme.kt
+e: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/ui/theme/Theme.kt:23:17 Overload resolution ambiguity: 
+public val TextPrimary: Color defined in com.todo.dailyroutine.ui.theme in file Color.kt
+public val TextPrimary: Color defined in com.todo.dailyroutine.ui.theme in file PremiumTheme.kt
+e: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/ui/viewmodel/AiViewModel.kt:147:22 Unresolved reference: chatWithTools
+e: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/ui/viewmodel/AiViewModel.kt:147:70 Cannot infer a type for this parameter. Please specify it explicitly.
+e: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/ui/viewmodel/AiViewModel.kt:150:33 Overload resolution ambiguity: 
+public open fun <T : Any!> fromJson(p0: JsonElement!, p1: Class<TypeVariable(T)!>!): TypeVariable(T)! defined in com.google.gson.Gson
+public open fun <T : Any!> fromJson(p0: JsonElement!, p1: Type!): TypeVariable(T)! defined in com.google.gson.Gson
+public open fun <T : Any!> fromJson(p0: JsonReader!, p1: Type!): TypeVariable(T)! defined in com.google.gson.Gson
+public open fun <T : Any!> fromJson(p0: Reader!, p1: Class<TypeVariable(T)!>!): TypeVariable(T)! defined in com.google.gson.Gson
+public open fun <T : Any!> fromJson(p0: Reader!, p1: Type!): TypeVariable(T)! defined in com.google.gson.Gson
+public open fun <T : Any!> fromJson(p0: String!, p1: Class<TypeVariable(T)!>!): TypeVariable(T)! defined in com.google.gson.Gson
+public open fun <T : Any!> fromJson(p0: String!, p1: Type!): TypeVariable(T)! defined in com.google.gson.Gson
+e: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/ui/viewmodel/AiViewModel.kt:159:36 Suspension functions can be called only within coroutine body
+e: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/ui/viewmodel/AiViewModel.kt:166:50 Suspension functions can be called only within coroutine body
+e: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/ui/viewmodel/AiViewModel.kt:180:75 Unresolved reference: it
+e: file:///home/ubuntu/FlowOS/app/src/main/java/com/todo/dailyroutine/ui/viewmodel/HomeViewModel.kt:85:32 Unresolved reference: generateNextBestAction
+
+> Task :app:compileDebugKotlin FAILED
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:compileDebugKotlin'.
+> A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
+   > Compilation error. See log for more details
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 32s
+31 actionable tasks: 2 executed, 29 up-to-date
