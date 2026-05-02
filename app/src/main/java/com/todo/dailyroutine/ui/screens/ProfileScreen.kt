@@ -18,7 +18,11 @@ import com.todo.dailyroutine.ui.components.*
 import com.todo.dailyroutine.ui.theme.*
 
 @Composable
-fun ProfileScreen(authViewModel: AuthViewModel, onSignedOut: () -> Unit) {
+fun ProfileScreen(
+    authViewModel: AuthViewModel, 
+    onSignedOut: () -> Unit,
+    onNavigateToAiConfig: () -> Unit
+) {
     val state by authViewModel.uiState.collectAsState()
     var showAppLockDialog by remember { mutableStateOf(false) }
     
@@ -66,6 +70,17 @@ fun ProfileScreen(authViewModel: AuthViewModel, onSignedOut: () -> Unit) {
                     Text(state.userEmail ?: "Flow User", style = Typography.headlineMedium, color = Color.White)
                     Text("Protocol: Active", style = Typography.labelLarge, color = Color(0xFF30D158))
                 }
+            }
+        }
+
+        item {
+            ProfileSection(title = "Intelligence Configuration") {
+                ProfileItem(
+                    Icons.Default.AutoAwesome,
+                    "AI Protocol",
+                    "Manage API keys and neural models",
+                    onClick = onNavigateToAiConfig
+                )
             }
         }
 
@@ -184,7 +199,7 @@ fun ProfileSection(title: String, modifier: Modifier = Modifier, content: @Compo
         Surface(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(20.dp),
-            color = Color(0xFF12121A),
+            color = SurfaceCard,
             border = BorderStroke(1.dp, Color.White.copy(alpha = 0.05f))
         ) {
             Column(Modifier.padding(vertical = 8.dp)) {

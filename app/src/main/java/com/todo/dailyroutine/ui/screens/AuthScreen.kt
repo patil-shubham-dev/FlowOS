@@ -40,17 +40,16 @@ fun AuthScreen(
             .fillMaxSize()
             .background(BackgroundBase)
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.radialGradient(
-                        colors = listOf(AccentPrimary.copy(alpha = 0.1f), Color.Transparent),
-                        center = Offset(0f, 0f),
-                        radius = 2500f
-                    )
+        // Deep Ambient Glow
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            drawCircle(
+                brush = Brush.radialGradient(
+                    colors = listOf(AccentPrimary.copy(alpha = 0.08f), Color.Transparent),
+                    center = Offset(size.width * 0.1f, size.height * 0.2f),
+                    radius = size.maxDimension
                 )
-        )
+            )
+        }
 
         Column(
             modifier = Modifier
@@ -60,54 +59,71 @@ fun AuthScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Icon(
-                imageVector = Icons.Default.Cyclone,
-                contentDescription = null,
-                modifier = Modifier.size(80.dp),
-                tint = AccentPrimary
-            )
+            Box(
+                modifier = Modifier
+                    .size(88.dp)
+                    .background(Color.White.copy(alpha = 0.03f), CircleShape)
+                    .border(1.dp, Color.White.copy(alpha = 0.05f), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Cyclone,
+                    contentDescription = null,
+                    modifier = Modifier.size(44.dp),
+                    tint = AccentPrimary
+                )
+            }
             
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(32.dp))
             
             Text(
                 "FlowOS",
-                style = Typography.displayLarge,
-                color = Color.White
+                style = Typography.displayLarge.copy(fontSize = 48.sp),
+                color = Color.White,
+                fontWeight = FontWeight.Black
             )
             
             Text(
-                "Synchronize your biological state.",
+                "Synchronize your biological state",
                 style = Typography.labelLarge,
-                color = TextSecondary
+                color = TextSecondary,
+                letterSpacing = 1.sp
             )
 
-            Spacer(Modifier.height(56.dp))
+            Spacer(Modifier.height(64.dp))
 
-            AnimatedContent(targetState = state.mode, label = "AuthMode") { mode ->
-                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            AnimatedContent(
+                targetState = state.mode, 
+                label = "AuthMode",
+                transitionSpec = {
+                    fadeIn(tween(500)) + slideInVertically { it / 2 } togetherWith
+                    fadeOut(tween(500)) + slideOutVertically { -it / 2 }
+                }
+            ) { mode ->
+                Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
                     when (mode) {
                         AuthMode.LOGIN, AuthMode.SIGNUP -> {
-                            AuthTextField(email, { email = it }, "Identity (Email)", Icons.Default.Email)
-                            AuthTextField(password, { password = it }, "Security Key", Icons.Default.Lock, isPassword = true)
+                            AuthTextField(email, { email = it }, "Identity (Email)", Icons.Default.AlternateEmail)
+                            AuthTextField(password, { password = it }, "Security Key", Icons.Default.Security, isPassword = true)
                         }
                         AuthMode.OTP -> {
-                            AuthTextField(otp, { otp = it }, "Verification Protocol", Icons.Default.VerifiedUser)
+                            AuthTextField(otp, { otp = it }, "Verification Protocol", Icons.Default.Fingerprint)
                         }
                         AuthMode.FORGOT_PASSWORD -> {
-                            AuthTextField(email, { email = it }, "Identity (Email)", Icons.Default.Email)
+                            AuthTextField(email, { email = it }, "Identity (Email)", Icons.Default.AlternateEmail)
                         }
                         AuthMode.RESET_PASSWORD -> {
-                            AuthTextField(otp, { otp = it }, "Reset Code", Icons.Default.VerifiedUser)
-                            AuthTextField(password, { password = it }, "New Security Key", Icons.Default.Lock, isPassword = true)
+                            AuthTextField(otp, { otp = it }, "Reset Code", Icons.Default.VpnKey)
+                            AuthTextField(password, { password = it }, "New Security Key", Icons.Default.Security, isPassword = true)
                         }
                     }
                 }
             }
 
-            Spacer(Modifier.height(32.dp))
+            Spacer(Modifier.height(40.dp))
 
-            if (state.error != null) ErrorCard(state.error!!, modifier = Modifier.padding(bottom = 16.dp))
-            if (state.statusMessage != null) SuccessCard(state.statusMessage!!, modifier = Modifier.padding(bottom = 16.dp))
+            if (state.error != null) ErrorCard(state.error!!, modifier = Modifier.padding(bottom = 20.dp))
+            if (state.statusMessage != null) SuccessCard(state.statusMessage!!, modifier = Modifier.padding(bottom = 20.dp))
             
             PrimaryGradientButton(
                 text = when (state.mode) {
@@ -129,35 +145,33 @@ fun AuthScreen(
                 }
             )
 
-            when (state.mode) {
-                AuthMode.LOGIN -> {
-                    TextButton(
-                        onClick = { viewModel.setMode(AuthMode.SIGNUP) },
-                        modifier = Modifier.padding(top = 8.dp)
-                    ) {
-                        Text("Create new identity", color = TextSecondary)
+            Row(
+                modifier = Modifier.padding(top = 24.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                when (state.mode) {
+                    AuthMode.LOGIN -> {
+                        TextButton(onClick = { viewModel.setMode(AuthMode.SIGNUP) }) {
+                            Text("New Identity", color = AccentPrimary, fontWeight = FontWeight.Bold)
+                        }
+                        Text(
+                            " | ", 
+                            color = Color.White.copy(alpha = 0.1f),
+                            modifier = Modifier.padding(horizontal = 4.dp)
+                        )
+                        TextButton(onClick = { viewModel.setMode(AuthMode.FORGOT_PASSWORD) }) {
+                            Text("Lost Key", color = TextSecondary)
+                        }
                     }
-                    TextButton(
-                        onClick = { viewModel.setMode(AuthMode.FORGOT_PASSWORD) },
-                        modifier = Modifier.padding(top = 4.dp)
-                    ) {
-                        Text("Forgot password?", color = TextSecondary)
+                    AuthMode.SIGNUP -> {
+                        TextButton(onClick = { viewModel.setMode(AuthMode.LOGIN) }) {
+                            Text("Existing Identity", color = AccentPrimary, fontWeight = FontWeight.Bold)
+                        }
                     }
-                }
-                AuthMode.SIGNUP -> {
-                    TextButton(
-                        onClick = { viewModel.setMode(AuthMode.LOGIN) },
-                        modifier = Modifier.padding(top = 16.dp)
-                    ) {
-                        Text("Already has identity", color = TextSecondary)
-                    }
-                }
-                else -> {
-                    TextButton(
-                        onClick = { viewModel.setMode(AuthMode.LOGIN) },
-                        modifier = Modifier.padding(top = 16.dp)
-                    ) {
-                        Text("Back to login", color = TextSecondary)
+                    else -> {
+                        TextButton(onClick = { viewModel.setMode(AuthMode.LOGIN) }) {
+                            Text("Return to Standby", color = TextSecondary)
+                        }
                     }
                 }
             }
@@ -175,17 +189,19 @@ fun AuthTextField(
 ) {
     var passwordVisible by remember { mutableStateOf(false) }
 
-    OutlinedTextField(
+    TextField(
         value = value,
         onValueChange = onValueChange,
-        label = { Text(label) },
-        leadingIcon = { Icon(icon, contentDescription = null, tint = Color(0xFF7C5CFF)) },
+        placeholder = { Text(label, color = Color.White.copy(alpha = 0.2f)) },
+        leadingIcon = { Icon(icon, contentDescription = null, tint = AccentPrimary, modifier = Modifier.size(20.dp)) },
         trailingIcon = {
             if (isPassword) {
                 IconButton(onClick = { passwordVisible = !passwordVisible }) {
                     Icon(
                         imageVector = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                        contentDescription = null
+                        contentDescription = null,
+                        tint = Color.White.copy(alpha = 0.3f),
+                        modifier = Modifier.size(20.dp)
                     )
                 }
             }
@@ -195,13 +211,14 @@ fun AuthTextField(
             else androidx.compose.ui.text.input.VisualTransformation.None,
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        colors = OutlinedTextFieldDefaults.colors(
-            focusedBorderColor = Color(0xFF7C5CFF),
-            unfocusedBorderColor = Color.White.copy(alpha = 0.1f),
-            focusedLabelColor = Color(0xFF7C5CFF),
-            unfocusedLabelColor = Color.White.copy(alpha = 0.4f),
+        colors = TextFieldDefaults.colors(
+            focusedContainerColor = Color.White.copy(alpha = 0.03f),
+            unfocusedContainerColor = Color.White.copy(alpha = 0.03f),
+            focusedIndicatorColor = AccentPrimary,
+            unfocusedIndicatorColor = Color.Transparent,
+            focusedTextColor = Color.White,
             unfocusedTextColor = Color.White,
-            focusedTextColor = Color.White
+            cursorColor = AccentPrimary
         ),
         singleLine = true
     )
@@ -209,36 +226,38 @@ fun AuthTextField(
 
 @Composable
 fun ErrorCard(message: String, modifier: Modifier = Modifier) {
-    Card(
+    Surface(
         modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF3B1A1A)),
-        shape = RoundedCornerShape(12.dp)
+        color = Color(0xFF3B1A1A).copy(alpha = 0.5f),
+        shape = RoundedCornerShape(16.dp),
+        border = BorderStroke(1.dp, Color(0xFFFF5C5C).copy(alpha = 0.2f))
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(Icons.Default.Error, contentDescription = null, tint = Color(0xFFFF5C5C))
-            Spacer(Modifier.width(12.dp))
-            Text(message, color = Color(0xFFFFEAEA), style = MaterialTheme.typography.bodyMedium)
+            Icon(Icons.Default.Error, contentDescription = null, tint = Color(0xFFFF5C5C), modifier = Modifier.size(20.dp))
+            Spacer(Modifier.width(16.dp))
+            Text(message, color = Color.White.copy(alpha = 0.8f), style = Typography.bodyMedium)
         }
     }
 }
 
 @Composable
 fun SuccessCard(message: String, modifier: Modifier = Modifier) {
-    Card(
+    Surface(
         modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF1A3B1E)),
-        shape = RoundedCornerShape(12.dp)
+        color = Color(0xFF1A3B1E).copy(alpha = 0.5f),
+        shape = RoundedCornerShape(16.dp),
+        border = BorderStroke(1.dp, Color(0xFF5CFF7C).copy(alpha = 0.2f))
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color(0xFF5CFF7C))
-            Spacer(Modifier.width(12.dp))
-            Text(message, color = Color(0xFFEAFFEA), style = MaterialTheme.typography.bodyMedium)
+            Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color(0xFF5CFF7C), modifier = Modifier.size(20.dp))
+            Spacer(Modifier.width(16.dp))
+            Text(message, color = Color.White.copy(alpha = 0.8f), style = Typography.bodyMedium)
         }
     }
 }

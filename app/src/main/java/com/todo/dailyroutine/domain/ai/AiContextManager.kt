@@ -14,7 +14,8 @@ class AiContextManager(
     private val aiRepository: AiRepository,
     private val messageDao: MessageDao,
     private val summaryDao: SummaryDao,
-    private val vectorMemoryManager: VectorMemoryManager
+    private val vectorMemoryManager: VectorMemoryManager,
+    private val memoryPipeline: MemoryPipeline
 ) {
     
     suspend fun getOptimizedContext(userId: String, currentQuery: String): List<Map<String, String>> = withContext(Dispatchers.IO) {
@@ -26,7 +27,7 @@ class AiContextManager(
         // 2. Vector-Based Memory Retrieval (Top 5)
         val relevantMemories = vectorMemoryManager.retrieveRelevantMemories(userId, currentQuery)
         if (relevantMemories.isNotEmpty()) {
-            val memoryText = relevantMemories.joinToString("\n") { "- [${it.type}]: ${it.content}" }
+            val memoryText = relevantMemories.joinToString("\n") { "- [${it.type}]: ${it.text}" }
             context.add(mapOf("role" to "system", "content" to "Relevant User Context:\n$memoryText"))
         }
 
@@ -47,45 +48,53 @@ class AiContextManager(
     }
 
     /**
-     * Strict Memory Pipeline:
-     * User Input -> AI Classification -> System Validation -> Storage
+     * Processes new messages and triggers the Memory Pipeline.
+     * Triggers rolling summarization every 12 messages.
      */
     suspend fun processNewMessage(userId: String, role: String, content: String) = withContext(Dispatchers.IO) {
         messageDao.insertMessage(LocalMessage(userId = userId, role = role, content = content))
 
         if (role == "user") {
-            // 1. AI Classification (Ask AI to identify facts/preferences)
-            val classificationPrompt = """
-                Analyze the user message and extract key facts or preferences for long-term memory.
-                Return ONLY a JSON object with:
-                {
-                  "shouldStore": boolean,
-                  "type": "preference" | "fact" | "goal" | "task",
-                  "content": "concise summary",
-                  "importance": float (0.0-1.0)
-                }
-                Message: "$content"
-            """.trimIndent()
+            memoryPipeline.processAndStore(userId, content)
+        }
+
+        // Rolling Summarization: Trigger every 12 messages
+        val messageCount = messageDao.getMessageCount(userId)
+        if (messageCount % 12 == 0) {
+            triggerSummarization(userId)
+        }
+    }
+
+    private suspend fun triggerSummarization(userId: String) {
+        val messages = messageDao.getRecentMessages(20).reversed()
+        if (messages.size < 10) return
+
+        val historyText = messages.joinToString("\n") { "${it.role}: ${it.content}" }
+        val currentSummary = summaryDao.getSummary(userId)?.currentSummary ?: ""
+        
+        val summaryPrompt = """
+            Provide a concise, high-density summary of the following conversation history.
+            Incorporate relevant details from the previous summary if provided.
             
-            val aiResponse = aiRepository.chat(classificationPrompt).getOrNull()
+            Previous Summary: $currentSummary
             
-            // 2. System Validation & Storage
-            aiResponse?.let {
-                try {
-                    val json = JSONObject(it)
-                    val shouldStore = json.getBoolean("shouldStore")
-                    val type = json.getString("type")
-                    val memoryContent = json.getString("content")
-                    val importance = json.getDouble("importance").toFloat()
-                    
-                    // Hard rules validation
-                    if (shouldStore && memoryContent.length > 5 && importance > 0.4f) {
-                        vectorMemoryManager.storeMemory(userId, memoryContent, type, importance)
-                    }
-                } catch (e: Exception) {
-                    // Fail silently or log error
-                }
-            }
+            New History:
+            $historyText
+            
+            Return ONLY the new summary text.
+        """.trimIndent()
+
+        val newSummaryContent = aiRepository.chat(summaryPrompt).getOrNull()
+        if (newSummaryContent != null) {
+            summaryDao.updateSummary(
+                ConversationSummary(
+                    userId = userId,
+                    currentSummary = newSummaryContent,
+                    lastUpdated = System.currentTimeMillis()
+                )
+            )
+            // Optional: Prune old messages after summarization to keep DB clean
+            // messageDao.pruneOldMessages(userId, 50)
         }
     }
 }

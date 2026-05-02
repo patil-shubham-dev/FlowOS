@@ -17,4 +17,12 @@ interface UniversalAiApi {
         @Url url: String,
         @HeaderMap headers: Map<String, String>
     ): Response<ResponseBody>
+    @Multipart
+    @POST
+    suspend fun transcribe(
+        @Url url: String,
+        @HeaderMap headers: Map<String, String>,
+        @Part file: okhttp3.MultipartBody.Part,
+        @Part("model") model: okhttp3.RequestBody
+    ): Response<ResponseBody>
 }

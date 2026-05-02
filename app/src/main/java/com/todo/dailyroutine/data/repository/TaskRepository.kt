@@ -1,42 +1,23 @@
 package com.todo.dailyroutine.data.repository
 
-import com.todo.dailyroutine.BuildConfig
 import com.todo.dailyroutine.data.local.dao.TaskDao
 import com.todo.dailyroutine.data.local.entity.LocalTask
 import com.todo.dailyroutine.data.local.toEntity
 import com.todo.dailyroutine.data.local.toModel
 import com.todo.dailyroutine.data.model.TaskItem
-import com.todo.dailyroutine.data.remote.SupabaseRestApi
-import com.todo.dailyroutine.data.remote.dto.TaskDto
 import com.todo.dailyroutine.data.session.SessionManager
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
 class TaskRepository(
-    private val api: SupabaseRestApi,
     private val taskDao: TaskDao,
     private val sessionManager: SessionManager
 ) {
-    private fun bearer() = "Bearer ${sessionManager.getToken()}"
-
     val tasks: Flow<List<TaskItem>> = taskDao.getAllTasks().map { list -> list.map { it.toModel() } }
 
-    suspend fun fetchTasks(): Result<Unit> = runCatching {
-        val remote = api.getTasks(
-            apiKey = BuildConfig.SUPABASE_ANON_KEY,
-            bearer = bearer(),
-            userIdFilter = "eq.${sessionManager.getUserId()}"
-        )
-        taskDao.getAllTasks().first().forEach { local ->
-             if (local.syncStatus == 0 && remote.none { it.id == local.id }) {
-                 taskDao.hardDeleteTask(local)
-             }
-        }
-        remote.forEach { dto ->
-            taskDao.insertTask(LocalTask(dto.id!!, dto.userId, dto.title, dto.category, dto.completed, priority = dto.priority, syncStatus = 0))
-        }
-    }
+    suspend fun fetchTasks(): Result<Unit> = Result.success(Unit) // Local-only: no fetch needed
+
 
     suspend fun addTask(title: String, category: String, priority: Int = 2, energy: Int = 5, timeBlock: String = "Morning"): Result<Unit> = runCatching {
         val newTask = LocalTask(

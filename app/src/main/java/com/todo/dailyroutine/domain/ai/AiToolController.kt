@@ -31,23 +31,43 @@ class AiToolController(
         return listOf(
             mapOf("type" to "function", "function" to mapOf(
                 "name" to "create_task",
-                "description" to "Create a new task/objective",
+                "description" to "Create a new task/objective in the protocol",
                 "parameters" to mapOf("type" to "object", "properties" to mapOf(
-                    "title" to mapOf("type" to "string"),
-                    "timeBlock" to mapOf("type" to "string", "enum" to listOf("Morning", "Deep Work", "Evening", "Night")),
+                    "title" to mapOf("type" to "string", "description" to "The title of the task"),
+                    "category" to mapOf("type" to "string", "enum" to listOf("work", "personal", "health", "focus")),
                     "priority" to mapOf("type" to "integer", "minimum" to 1, "maximum" to 5),
-                    "energyRequired" to mapOf("type" to "integer", "minimum" to 1, "maximum" to 10)
-                ))
+                    "energyRequired" to mapOf("type" to "integer", "minimum" to 1, "maximum" to 10),
+                    "timeBlock" to mapOf("type" to "string", "enum" to listOf("Morning", "Deep Work", "Evening", "Night"))
+                ), "required" to listOf("title"))
+            )),
+            mapOf("type" to "function", "function" to mapOf(
+                "name" to "complete_task",
+                "description" to "Mark a specific task as complete",
+                "parameters" to mapOf("type" to "object", "properties" to mapOf(
+                    "taskId" to mapOf("type" to "string", "description" to "The unique ID of the task")
+                ), "required" to listOf("taskId"))
+            )),
+            mapOf("type" to "function", "function" to mapOf(
+                "name" to "create_habit",
+                "description" to "Initialize a new daily ritual/habit",
+                "parameters" to mapOf("type" to "object", "properties" to mapOf(
+                    "name" to mapOf("type" to "string", "description" to "Name of the habit"),
+                    "timeBlock" to mapOf("type" to "string", "enum" to listOf("Morning", "Deep Work", "Evening", "Night"))
+                ), "required" to listOf("name"))
             )),
             mapOf("type" to "function", "function" to mapOf(
                 "name" to "write_journal_entry",
-                "description" to "Capture a journal reflection",
+                "description" to "Document a reflection or journey entry",
                 "parameters" to mapOf("type" to "object", "properties" to mapOf(
-                    "content" to mapOf("type" to "string"),
+                    "content" to mapOf("type" to "string", "description" to "The narrative content of the entry"),
                     "vibeRating" to mapOf("type" to "integer", "minimum" to 1, "maximum" to 10)
-                ))
+                ), "required" to listOf("content"))
+            )),
+            mapOf("type" to "function", "function" to mapOf(
+                "name" to "get_daily_summary",
+                "description" to "Retrieve the current day's progress and Flow Score",
+                "parameters" to mapOf("type" to "object", "properties" to mapOf())
             ))
-            // ... add more as needed
         )
     }
 }

@@ -296,28 +296,82 @@ private fun MiniStat(label: String, done: Int, total: Int, color: Color) {
 @Composable
 fun DashboardScaffold(
     title: String,
+    onBackClick: (() -> Unit)? = null,
     content: LazyListScope.() -> Unit
 ) {
-    LazyColumn(
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(BackgroundBase),
-        contentPadding = PaddingValues(
-            start = 20.dp,
-            end = 20.dp,
-            top = 16.dp,
-            bottom = 140.dp
-        )
+            .background(BackgroundBase)
     ) {
-        item {
-            Spacer(Modifier.height(24.dp))
-            Text(
-                text = title,
-                style = Typography.displayLarge,
-                color = Color.White,
-                modifier = Modifier.padding(bottom = 16.dp)
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(
+                start = 20.dp,
+                end = 20.dp,
+                top = 24.dp,
+                bottom = 140.dp
+            )
+        ) {
+            item {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .statusBarsPadding()
+                        .padding(bottom = 24.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (onBackClick != null) {
+                        IconButton(
+                            onClick = onBackClick,
+                            modifier = Modifier
+                                .padding(end = 16.dp)
+                                .size(48.dp)
+                                .background(Color.White.copy(alpha = 0.05f), CircleShape)
+                        ) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, tint = Color.White)
+                        }
+                    }
+                    Text(
+                        text = title,
+                        style = Typography.displayLarge.copy(fontSize = 42.sp),
+                        color = Color.White,
+                        fontWeight = FontWeight.Black
+                    )
+                }
+            }
+            content()
+        }
+    }
+}
+
+@Composable
+fun AnimatedCheckbox(
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val transition = updateTransition(checked, label = "checkbox")
+    val scale by transition.animateFloat(label = "scale") { if (it) 1f else 0.8f }
+    val alpha by transition.animateFloat(label = "alpha") { if (it) 1f else 0.4f }
+    val color by transition.animateColor(label = "color") { if (it) SuccessGreen else Color.White.copy(alpha = 0.1f) }
+
+    Box(
+        modifier = modifier
+            .size(32.dp)
+            .scale(scale)
+            .background(color.copy(alpha = 0.1f), CircleShape)
+            .border(1.dp, color, CircleShape)
+            .clickable { onCheckedChange(!checked) },
+        contentAlignment = Alignment.Center
+    ) {
+        if (checked) {
+            Icon(
+                Icons.Default.Check,
+                contentDescription = null,
+                tint = SuccessGreen,
+                modifier = Modifier.size(18.dp)
             )
         }
-        content()
     }
 }

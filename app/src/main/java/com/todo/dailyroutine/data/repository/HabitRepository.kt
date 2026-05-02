@@ -1,42 +1,23 @@
 package com.todo.dailyroutine.data.repository
 
-import com.todo.dailyroutine.BuildConfig
 import com.todo.dailyroutine.data.local.dao.HabitDao
 import com.todo.dailyroutine.data.local.entity.LocalHabit
 import com.todo.dailyroutine.data.local.toEntity
 import com.todo.dailyroutine.data.local.toModel
 import com.todo.dailyroutine.data.model.HabitItem
-import com.todo.dailyroutine.data.remote.SupabaseRestApi
-import com.todo.dailyroutine.data.remote.dto.HabitDto
 import com.todo.dailyroutine.data.session.SessionManager
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
 class HabitRepository(
-    private val api: SupabaseRestApi,
     private val habitDao: HabitDao,
     private val sessionManager: SessionManager
 ) {
-    private fun bearer() = "Bearer ${sessionManager.getToken()}"
-
     val habits: Flow<List<HabitItem>> = habitDao.getAllHabits().map { list -> list.map { it.toModel() } }
 
-    suspend fun fetchHabits(): Result<Unit> = runCatching {
-        val remote = api.getHabits(
-            apiKey = BuildConfig.SUPABASE_ANON_KEY,
-            bearer = bearer(),
-            userIdFilter = "eq.${sessionManager.userId()}"
-        )
-        habitDao.getAllHabits().first().forEach { local ->
-            if (local.syncStatus == 0 && remote.none { it.id == local.id }) {
-                habitDao.hardDeleteHabit(local)
-            }
-        }
-        remote.forEach { dto ->
-            habitDao.insertHabit(LocalHabit(dto.id!!, dto.userId, dto.name, dto.streak, dto.completedToday, syncStatus = 0))
-        }
-    }
+    suspend fun fetchHabits(): Result<Unit> = Result.success(Unit) // Local-only: no fetch needed
+
 
     suspend fun addHabit(name: String, timeBlock: String = "Morning"): Result<Unit> = runCatching {
         val newHabit = LocalHabit(

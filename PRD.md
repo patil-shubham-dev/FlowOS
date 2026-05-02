@@ -45,16 +45,16 @@ FlowOS is a high-performance **personal life operating system** designed to sync
 ### 3.5 Identity & Security (Auth)
 *   **Multi-Mode Auth**: OTP-based verification, secure login, and signup.
 *   **Session Recovery**: Integrated "Forgot Password" and "Security Key Update" flows.
-*   **Offline-First Sync**: Automatic local data persistence with background sync status (Pending/Synced/Update).
+*   **Local Persistence**: Reliable on-device data storage with Room database for maximum privacy and performance.
 
 ---
 
 ## 4. System Architecture (Screens)
 
-### 4.1 Auth / Session Initiation
-*   Login/Signup with Supabase.
-*   OTP Verification for identity hardening.
-*   Password recovery and reset flows.
+### 4.1 Session Management
+*   Local-only profile creation.
+*   Secure on-device data isolation.
+*   Optional backup/export flows.
 
 ### 4.2 Neurostate (Dashboard)
 *   High-level bio-optimization summary.
@@ -89,11 +89,9 @@ FlowOS is a high-performance **personal life operating system** designed to sync
 *   **Material 3**: Premium design system components.
 *   **Room Database**: Local persistence for offline-first usage.
 
-### Backend
-*   **Supabase**:
-    *   PostgreSQL for structured data.
-    *   Auth for identity management.
-    *   Edge Functions (Deno) for custom logic (e.g., SMTP OTP).
+### Data Storage
+*   **Room Database**: Primary data store for all user information.
+*   **Encrypted SharedPreferences**: Secure storage for API keys and sensitive settings.
 
 ### AI Integration
 *   **AI Studio / Retrofit**: Connection to advanced LLMs.
@@ -101,21 +99,21 @@ FlowOS is a high-performance **personal life operating system** designed to sync
 
 ---
 
-## 6. Database Schema (Room / Supabase)
+## 6. Database Schema (Room)
 
 ### tasks (LocalTask)
 *   `id` (UUID), `userId`, `title`, `category`
 *   `completed` (Boolean), `priority` (Int), `energyRequired` (Int 1-10)
 *   `timeBlock` (Morning/Deep Work/Evening/Night)
-*   `syncStatus` (0:synced, 1:pending_create, 2:pending_update, 3:pending_delete)
+*   `lastUpdated` (Long), `isDeleted` (Boolean)
 
 ### habits (LocalHabit)
 *   `id`, `userId`, `name`, `streak`
-*   `completedToday` (Boolean), `timeBlock`, `syncStatus`
+*   `completedToday` (Boolean), `timeBlock`
 
 ### journal_entries (LocalJournalEntry)
 *   `id`, `userId`, `content`, `rating` (1-10)
-*   `aiInsight` (String?), `date` (ISO), `timestamp`, `syncStatus`
+*   `aiInsight` (String?), `date` (ISO), `timestamp`
 
 ### ai_configs (LocalAiConfig)
 *   `providerName`, `model`, `apiKeyEncrypted`, `isActive`
@@ -136,8 +134,8 @@ FlowOS is a high-performance **personal life operating system** designed to sync
 ---
 
 ## 8. Development Progress
-*   [x] Supabase Auth with custom OTP handler.
-*   [x] Room database with offline sync architecture.
+*   [x] Local-first session management.
+*   [x] Room database with reliable on-device persistence.
 *   [x] Unified Execution Flow (Habits + Tasks).
 *   [x] Reflection/Journal system with mood tracking.
 *   [x] AI Context Manager (Memories & Summaries).

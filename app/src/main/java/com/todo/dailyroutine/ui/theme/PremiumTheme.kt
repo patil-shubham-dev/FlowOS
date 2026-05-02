@@ -13,10 +13,10 @@ val Grid2 = 16.sp
 val Grid3 = 24.sp
 
 // Claude/ChatGPT Level Colors
-val DeepBackground = Color(0xFF0D0D0D)
-val SurfaceDark = Color(0xFF171717)
-val SurfaceLight = Color(0xFF212121)
-val AccentFlow = Color(0xFF7C5CFF)
+val DeepBackground = BackgroundBase
+val SurfaceDark = SurfaceCard
+val SurfaceLight = SurfaceElevated
+val AccentFlow = AccentPrimary
 val TextPrimary = Color(0xFFECECEC)
 val TextSecondary = Color(0xFFA0A0A0)
 val TextMuted = Color(0xFF676767)

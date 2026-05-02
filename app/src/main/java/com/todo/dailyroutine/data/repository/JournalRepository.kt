@@ -10,7 +10,8 @@ import java.util.UUID
 
 class JournalRepository(
     private val journalDao: JournalDao,
-    private val streakDao: JournalStreakDao
+    private val streakDao: JournalStreakDao,
+    private val memoryPipeline: com.todo.dailyroutine.domain.vector.MemoryPipeline? = null
 ) {
     fun getAllEntries(): Flow<List<LocalJournalEntry>> = journalDao.getAllEntries()
 
@@ -24,6 +25,9 @@ class JournalRepository(
             date = java.time.LocalDate.now().toString()
         )
         journalDao.insertEntry(entry)
+        
+        // Process entry through Memory Pipeline for long-term intelligence
+        memoryPipeline?.processAndStore(userId, "Journal Entry: $content (Vibe: $rating/10)")
         
         // Update persistent streak
         val currentStreak = getCurrentStreak(userId)

@@ -27,6 +27,7 @@ data class HomeUiState(
     val habits: List<HabitItem> = emptyList(),
     val stats: DashboardStats = DashboardStats(0, 0, 0, "Beginner"),
     val nextBestAction: String = "Start with one small high-impact task now.",
+    val oracleInsight: String? = null,
     val collapsedSections: Map<String, Boolean> = emptyMap(),
     val error: String? = null
 )
@@ -50,7 +51,19 @@ class HomeViewModel(
                 tasks to habits
             }.collect { (tasks, habits) ->
                 val completedTasks = tasks.count { it.completed }
-                val progress = if (tasks.isNotEmpty()) (completedTasks * 100) / tasks.size else 0
+                
+                // Refined Sync %: Completion + Time Block Adherence
+                val currentHour = java.time.LocalTime.now().hour
+                val currentBlock = when (currentHour) {
+                    in 5..11 -> "Morning"
+                    in 12..16 -> "Deep Work"
+                    in 17..21 -> "Evening"
+                    else -> "Night"
+                }
+                
+                val adherenceBonus = tasks.count { it.completed && it.timeBlock == currentBlock } * 5
+                val baseProgress = if (tasks.isNotEmpty()) (completedTasks * 100) / tasks.size else 0
+                val syncPercent = (baseProgress + adherenceBonus).coerceAtMost(100)
                 
                 // Calculate XP from tasks and habits
                 val totalXp = (completedTasks * 10) + habits.sumOf { it.streak * 5 }
@@ -60,7 +73,7 @@ class HomeViewModel(
                     tasks = tasks,
                     habits = habits,
                     stats = DashboardStats(
-                        progressPercent = progress,
+                        progressPercent = syncPercent,
                         pendingTasks = tasks.count { !it.completed },
                         totalXp = totalXp,
                         level = GamificationManager.getLevelTitle(level)
@@ -70,13 +83,14 @@ class HomeViewModel(
         }
     }
 
-    fun refresh(forceRemote: Boolean = true) {
+    fun refresh(forceRemote: Boolean = false) {
         viewModelScope.launch {
             if (forceRemote) {
                 taskRepository.fetchTasks()
                 habitRepository.fetchHabits()
             }
             updateNextAction()
+            updateOracleInsight()
         }
     }
 
@@ -91,13 +105,65 @@ class HomeViewModel(
         _uiState.value = _uiState.value.copy(nextBestAction = res.getOrDefault("Next best action: complete your top priority task."))
     }
 
+    private suspend fun updateOracleInsight() {
+        val state = _uiState.value
+        
+        // Check for conflicts
+        val conflictDetector = ScheduleConflictDetector()
+        val conflicts = conflictDetector.detectConflicts(
+            tasks = state.tasks.map { it.toEntity() },
+            habits = state.habits.map { it.toEntity() }
+        )
+        
+        if (conflicts.isNotEmpty()) {
+            _uiState.value = _uiState.value.copy(oracleInsight = "CRITICAL: ${conflicts.first().message}")
+            return
+        }
+
+        val contextText = """
+            Current State:
+            - Sync: ${state.stats.progressPercent}%
+            - Tasks Pending: ${state.stats.pendingTasks}
+            - Level: ${state.stats.level}
+            - Recent Tasks: ${state.tasks.filter { it.completed }.takeLast(3).joinToString { it.title }}
+        """.trimIndent()
+        
+        val insightPrompt = """
+            You are the FlowOS Oracle. Analyze the user's current operational state and provide a 
+            single, short, high-density proactive insight (max 15 words).
+            Context:
+            $contextText
+            
+            Return ONLY the insight text.
+        """.trimIndent()
+        
+        val insight = aiRepository.chat(insightPrompt).getOrNull() ?: "Maintain current execution protocol."
+        _uiState.value = _uiState.value.copy(oracleInsight = insight)
+    }
+
     fun optimizeSchedule(activeConfig: UserApiConfig?) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(loading = true)
-             // This would normally call aiScheduler and then update priorities in LocalTasks
-             // For now, let's just refresh to show we tried
-             aiScheduler.optimizeSchedule(_uiState.value.tasks.map { it.toEntity() }, activeConfig)
-             _uiState.value = _uiState.value.copy(loading = false)
+            
+            val activeTasks = _uiState.value.tasks.filter { !it.completed }
+            if (activeTasks.isEmpty()) {
+                _uiState.value = _uiState.value.copy(loading = false)
+                return@launch
+            }
+
+            aiScheduler.optimizeSchedule(activeTasks.map { it.toEntity() }, activeConfig)
+                .onSuccess { reorderList ->
+                    reorderList.forEach { (id, priority) ->
+                        val task = activeTasks.find { it.id == id }
+                        if (task != null) {
+                            taskRepository.updateTask(task.toEntity().copy(priority = priority))
+                        }
+                    }
+                    _uiState.value = _uiState.value.copy(loading = false)
+                }
+                .onFailure {
+                    _uiState.value = _uiState.value.copy(loading = false, error = "Optimization failed: ${it.message}")
+                }
         }
     }
 

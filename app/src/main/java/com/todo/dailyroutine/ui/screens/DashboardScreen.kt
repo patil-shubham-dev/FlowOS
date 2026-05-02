@@ -102,6 +102,30 @@ fun DashboardScreen(homeViewModel: HomeViewModel, aiViewModel: AiViewModel) {
                 }
             }
 
+            // Oracle Insight
+            state.oracleInsight?.let { insight ->
+                item {
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(24.dp),
+                        color = Color(0xFF30D158).copy(alpha = 0.1f),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF30D158).copy(alpha = 0.2f))
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(20.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(Icons.Default.Cyclone, contentDescription = null, tint = Color(0xFF30D158))
+                            Spacer(Modifier.width(16.dp))
+                            Column {
+                                Text("Oracle Insight", style = PremiumTypography.labelMedium, color = Color(0xFF30D158))
+                                Text(insight, style = PremiumTypography.bodyLarge, fontWeight = FontWeight.Medium)
+                            }
+                        }
+                    }
+                }
+            }
+
             // Next Best Action
             item {
                 Surface(

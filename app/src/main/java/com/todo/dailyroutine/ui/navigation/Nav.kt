@@ -41,6 +41,7 @@ sealed class Screen(val route: String, val label: String) {
     data object Ai : Screen("ai", "AI")
     data object Journal : Screen("journal", "Journal")
     data object Profile : Screen("profile", "Profile")
+    data object AiConfig : Screen("ai_config", "AI Config")
     data object Onboarding : Screen("onboarding", "Onboarding")
 }
 
@@ -86,7 +87,7 @@ fun AppNavHost() {
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
-    val showBottomBar = currentDestination?.route != Screen.Auth.route && currentDestination?.route != Screen.Onboarding.route
+    val showBottomBar = currentDestination?.route != Screen.Auth.route && currentDestination?.route != Screen.Onboarding.route && currentDestination?.route != Screen.AiConfig.route
 
     Box(modifier = Modifier.fillMaxSize()) {
         NavHost(
@@ -134,7 +135,16 @@ fun AppNavHost() {
                         navController.navigate(Screen.Auth.route) {
                             popUpTo(0) { inclusive = true }
                         }
+                    },
+                    onNavigateToAiConfig = {
+                        navController.navigate(Screen.AiConfig.route)
                     }
+                )
+            }
+            composable(Screen.AiConfig.route) {
+                AiConfigScreen(
+                    viewModel = aiViewModel,
+                    onBack = { navController.popBackStack() }
                 )
             }
         }

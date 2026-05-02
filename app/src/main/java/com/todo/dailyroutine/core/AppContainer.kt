@@ -21,15 +21,15 @@ class AppContainer(private val context: Context) {
     val db by lazy { AppDatabase.getDatabase(context) }
 
     val authRepository by lazy { 
-        AuthRepository(ApiClient.supabaseAuthApi, ApiClient.customAuthApi, sessionManager) 
+        AuthRepository(sessionManager) 
     }
 
     val taskRepository by lazy { 
-        TaskRepository(ApiClient.supabaseRestApi, db.taskDao(), sessionManager) 
+        TaskRepository(db.taskDao(), sessionManager) 
     }
 
     val habitRepository by lazy { 
-        HabitRepository(ApiClient.supabaseRestApi, db.habitDao(), sessionManager) 
+        HabitRepository(db.habitDao(), sessionManager) 
     }
 
     val flowScoreRepository by lazy {
@@ -37,7 +37,7 @@ class AppContainer(private val context: Context) {
     }
 
     val journalRepository by lazy {
-        JournalRepository(db.journalDao(), db.journalStreakDao())
+        JournalRepository(db.journalDao(), db.journalStreakDao(), memoryPipeline)
     }
 
     val aiRepository by lazy { 
@@ -49,7 +49,7 @@ class AppContainer(private val context: Context) {
     }
 
     val aiConfigRepository by lazy { 
-        AiConfigRepository(ApiClient.supabaseRestApi, db.aiConfigDao(), sessionManager) 
+        AiConfigRepository(db.aiConfigDao(), sessionManager) 
     }
 
     val oracleToolExecutor by lazy {
@@ -62,13 +62,15 @@ class AppContainer(private val context: Context) {
 
     val vectorEngine by lazy { VectorEngine(context) }
     val vectorMemoryManager by lazy { VectorMemoryManager(db.memoryDao(), vectorEngine) }
+    val memoryPipeline by lazy { MemoryPipeline(aiRepository, vectorMemoryManager) }
 
     val aiContextManager by lazy { 
         AiContextManager(
             aiRepository,
             db.messageDao(),
             db.summaryDao(),
-            vectorMemoryManager
+            vectorMemoryManager,
+            memoryPipeline
         )
     }
 
@@ -80,7 +82,15 @@ class AppContainer(private val context: Context) {
         com.todo.dailyroutine.notifications.NotificationScheduler(context) 
     }
 
-    val voiceToTextManager by lazy {
-        VoiceToTextManager(context)
+    val bioAnalyticsRepository by lazy {
+        BioAnalyticsRepository(db.bioDataDao())
+    }
+
+    val whisperTranscriptionManager by lazy {
+        WhisperTranscriptionManager(context, aiRepository, aiConfigRepository)
+    }
+
+    val journalViewModelFactory by lazy {
+        JournalViewModelFactory(journalRepository, whisperTranscriptionManager, aiRepository)
     }
 }

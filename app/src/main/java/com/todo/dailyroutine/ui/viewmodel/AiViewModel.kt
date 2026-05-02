@@ -79,18 +79,116 @@ class AiViewModel(
             contextManager.processNewMessage(userId, "user", userContent)
             
             val config = _uiState.value.activeConfig
-            aiRepository.chat(userContent, config).onSuccess { content ->
-                val aiMessage = ChatMessage("assistant", content)
-                _uiState.value = _uiState.value.copy(
-                    chatHistory = _uiState.value.chatHistory + aiMessage,
-                    loading = false
-                )
-                contextManager.processNewMessage(userId, "assistant", content)
-            }.onFailure {
+            val tools = toolController.getToolSchemas()
+            
+            var currentResult = aiRepository.chat(userContent, config, tools = tools)
+            var iterations = 0
+            
+            while (currentResult.isSuccess && iterations < 3) {
+                val raw = currentResult.getOrThrow()
+                val apiKey = config?.apiKey ?: ""
+                
+                val toolCalls = aiRepository.extractToolCalls(raw, apiKey)
+                if (toolCalls.isEmpty()) {
+                    val content = aiRepository.extractContent(raw, apiKey)
+                    val aiMessage = ChatMessage("assistant", content)
+                    _uiState.value = _uiState.value.copy(
+                        chatHistory = _uiState.value.chatHistory + aiMessage,
+                        loading = false
+                    )
+                    contextManager.processNewMessage(userId, "assistant", content)
+                    break
+                }
+
+                // Execute tools
+                val toolResults = toolController.handleToolCalls(toolCalls)
+                
+                // For simplicity in this demo, we add the results as a system message and ask AI to summarize
+                val resultsText = toolResults.joinToString("\n") { it.content }
+                val followUpPrompt = "System: Tools executed. Results:\n$resultsText\nSummarize the action taken for the user."
+                
+                currentResult = aiRepository.chat(followUpPrompt, config)
+                iterations++
+            }
+
+            if (currentResult.isFailure) {
                 _uiState.value = _uiState.value.copy(
                     loading = false,
-                    error = it.message
+                    error = currentResult.exceptionOrNull()?.message
                 )
+            }
+        }
+    }
+
+    fun updateConfigField(provider: String, apiKey: String? = null, baseUrl: String? = null, model: String? = null) {
+        val currentConfigs = _uiState.value.apiConfigs.toMutableList()
+        
+        // Auto-detect provider if apiKey is provided
+        val detectedProvider = apiKey?.let { aiRepository.detectProvider(it) } ?: provider
+        val targetProvider = if (apiKey != null) detectedProvider else provider
+
+        val index = currentConfigs.indexOfFirst { it.providerName == targetProvider }
+        
+        val updatedConfig = if (index != -1) {
+            currentConfigs[index].copy(
+                apiKey = apiKey ?: currentConfigs[index].apiKey,
+                baseUrl = baseUrl ?: currentConfigs[index].baseUrl,
+                model = model ?: currentConfigs[index].model
+            )
+        } else {
+            UserApiConfig(
+                providerName = targetProvider,
+                apiKey = apiKey ?: "",
+                baseUrl = baseUrl ?: "",
+                model = model ?: "",
+                isActive = false
+            )
+        }
+        
+        if (index != -1) currentConfigs[index] = updatedConfig else currentConfigs.add(updatedConfig)
+        _uiState.value = _uiState.value.copy(apiConfigs = currentConfigs)
+    }
+
+    fun testConnection(provider: String) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(loading = true, testResult = null)
+            val config = _uiState.value.apiConfigs.find { it.providerName == provider } ?: return@launch
+            val result = aiRepository.testConnection(config)
+            
+            _uiState.value = _uiState.value.copy(
+                loading = false,
+                testResult = if (result.isSuccess) "Connection Success" else "Connection Failed: ${result.exceptionOrNull()?.message}"
+            )
+        }
+    }
+
+    fun saveAndActivateConfig(provider: String) {
+        viewModelScope.launch {
+            val config = _uiState.value.apiConfigs.find { it.providerName == provider } ?: return@launch
+            // Deactivate others
+            val updatedConfigs = _uiState.value.apiConfigs.map { it.copy(isActive = it.providerName == provider) }
+            updatedConfigs.forEach { aiConfigRepository.saveConfig(it) }
+            loadConfigs()
+        }
+    }
+
+    fun fetchAvailableModels(provider: String) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(loading = true)
+            val config = _uiState.value.apiConfigs.find { it.providerName == provider } ?: return@launch
+            val models = aiRepository.fetchModels(config)
+            _uiState.value = _uiState.value.copy(
+                availableModels = models,
+                loading = false
+            )
+        }
+    }
+
+    fun selectModel(model: String) {
+        _uiState.value = _uiState.value.copy(selectedModel = model)
+        viewModelScope.launch {
+            _uiState.value.activeConfig?.let { active ->
+                aiConfigRepository.saveConfig(active.copy(model = model))
             }
         }
     }

@@ -31,6 +31,8 @@ fun AiScreen(viewModel: AiViewModel) {
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
 
+    var showModelPicker by remember { mutableStateOf(false) }
+
     LaunchedEffect(state.chatHistory.size) {
         if (state.chatHistory.isNotEmpty()) {
             listState.animateScrollToItem(state.chatHistory.size - 1)
@@ -40,32 +42,35 @@ fun AiScreen(viewModel: AiViewModel) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(DeepBackground)
+            .background(BackgroundBase)
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
             // Premium Header
-            PremiumAiHeader(
+            AiHeader(
                 activeModel = state.selectedModel,
-                onModelClick = { /* Show model picker */ }
+                availableModels = state.availableModels,
+                onModelSelected = { viewModel.selectModel(it) }
             )
 
             // Chat Messages
-            LazyColumn(
-                state = listState,
-                modifier = Modifier.weight(1f),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(24.dp)
-            ) {
-                items(state.chatHistory) { message ->
-                    PremiumChatBubble(message.role, message.content)
-                }
-                if (state.loading) {
-                    item { PremiumTypingIndicator() }
+            Box(modifier = Modifier.weight(1f)) {
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    items(state.chatHistory) { message ->
+                        ChatBubble(message)
+                    }
+                    if (state.loading) {
+                        item { TypingIndicator() }
+                    }
                 }
             }
 
             // Input Area
-            PremiumInputArea(
+            InputArea(
                 value = state.prompt,
                 onValueChange = { viewModel.onPromptChanged(it) },
                 onSend = { viewModel.sendMessage() },
@@ -76,78 +81,147 @@ fun AiScreen(viewModel: AiViewModel) {
 }
 
 @Composable
-fun PremiumAiHeader(activeModel: String, onModelClick: () -> Unit) {
-    Row(
+fun AiHeader(
+    activeModel: String,
+    availableModels: List<String>,
+    onModelSelected: (String) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .statusBarsPadding()
-            .padding(16.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+            .statusBarsPadding(),
+        color = BackgroundBase
     ) {
-        Column {
-            Text("Oracle", style = PremiumTypography.headlineMedium)
-            Row(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(8.dp))
-                    .clickable { onModelClick() }
-                    .padding(vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(8.dp)
-                        .background(Color(0xFF30D158), CircleShape)
-                )
-                Spacer(Modifier.width(8.dp))
-                Text(activeModel, style = PremiumTypography.labelMedium, color = TextSecondary)
-                Icon(Icons.Default.KeyboardArrowDown, contentDescription = null, tint = TextMuted, modifier = Modifier.size(16.dp))
-            }
-        }
-        
-        Surface(
-            modifier = Modifier.size(40.dp),
-            shape = CircleShape,
-            color = SurfaceDark,
-            border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.1f))
+        Row(
+            modifier = Modifier
+                .padding(horizontal = 24.dp, vertical = 20.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(Icons.Default.Settings, contentDescription = null, tint = TextPrimary, modifier = Modifier.padding(10.dp))
+            Column {
+                Text(
+                    "Oracle Intelligence",
+                    style = Typography.displaySmall.copy(fontSize = 28.sp),
+                    color = Color.White,
+                    fontWeight = FontWeight.Black
+                )
+                
+                Box {
+                    Row(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(Color.White.copy(alpha = 0.05f))
+                            .clickable { expanded = true }
+                            .padding(horizontal = 12.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(6.dp)
+                                .background(SuccessGreen, CircleShape)
+                        )
+                        Spacer(Modifier.width(10.dp))
+                        Text(
+                            activeModel.uppercase(),
+                            style = Typography.labelSmall,
+                            color = Color.White.copy(alpha = 0.6f),
+                            letterSpacing = 1.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Icon(
+                            Icons.Default.KeyboardArrowDown,
+                            contentDescription = null,
+                            tint = Color.White.copy(alpha = 0.4f),
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+
+                    DropdownMenu(
+                        expanded = expanded,
+                        onDismissRequest = { expanded = false },
+                        modifier = Modifier.background(SurfaceCard),
+                        offset = androidx.compose.ui.unit.DpOffset(0.dp, 8.dp)
+                    ) {
+                        availableModels.forEach { model ->
+                            DropdownMenuItem(
+                                text = { Text(model, color = Color.White, style = Typography.bodyMedium) },
+                                onClick = {
+                                    onModelSelected(model)
+                                    expanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+            
+            Surface(
+                modifier = Modifier.size(52.dp),
+                shape = CircleShape,
+                color = SurfaceCard,
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.05f))
+            ) {
+                Icon(
+                    Icons.Default.Cyclone,
+                    contentDescription = null,
+                    tint = AccentPrimary,
+                    modifier = Modifier.padding(14.dp)
+                )
+            }
         }
     }
 }
 
 @Composable
-fun PremiumChatBubble(role: String, content: String) {
-    val isUser = role == "user"
+fun ChatBubble(message: ChatMessage) {
+    val isUser = message.role == "user"
+    
     Column(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 6.dp),
         horizontalAlignment = if (isUser) Alignment.End else Alignment.Start
     ) {
         Row(
-            verticalAlignment = Alignment.Top,
+            modifier = Modifier.fillMaxWidth(0.92f),
             horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start,
-            modifier = Modifier.fillMaxWidth(0.85f)
+            verticalAlignment = Alignment.Top
         ) {
             if (!isUser) {
                 Surface(
-                    modifier = Modifier.size(28.dp),
+                    modifier = Modifier.size(36.dp),
                     shape = CircleShape,
-                    color = AccentFlow
+                    color = Color.White.copy(alpha = 0.05f),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.05f))
                 ) {
-                    Icon(Icons.Default.Cyclone, contentDescription = null, tint = Color.White, modifier = Modifier.padding(6.dp))
+                    Icon(
+                        Icons.Default.AutoAwesome,
+                        contentDescription = null,
+                        tint = AccentPrimary,
+                        modifier = Modifier.padding(10.dp)
+                    )
                 }
                 Spacer(Modifier.width(12.dp))
             }
 
             Surface(
-                color = if (isUser) SurfaceLight else Color.Transparent,
-                shape = RoundedCornerShape(18.dp),
+                color = if (isUser) AccentPrimary else SurfaceCard,
+                shape = RoundedCornerShape(
+                    topStart = 24.dp,
+                    topEnd = 24.dp,
+                    bottomStart = if (isUser) 24.dp else 4.dp,
+                    bottomEnd = if (isUser) 4.dp else 24.dp
+                ),
+                border = if (isUser) null else androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.05f))
             ) {
                 Text(
-                    text = content,
-                    style = PremiumTypography.bodyLarge,
-                    modifier = Modifier.padding(horizontal = if (isUser) 16.dp else 0.dp, vertical = if (isUser) 12.dp else 0.dp),
-                    color = if (isUser) TextPrimary else TextPrimary
+                    text = message.content,
+                    style = Typography.bodyLarge,
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 14.dp),
+                    color = Color.White,
+                    lineHeight = 26.sp
                 )
             }
         }
@@ -155,36 +229,53 @@ fun PremiumChatBubble(role: String, content: String) {
 }
 
 @Composable
-fun PremiumInputArea(value: String, onValueChange: (String) -> Unit, onSend: () -> Unit, enabled: Boolean) {
+fun InputArea(
+    value: String,
+    onValueChange: (String) -> Unit,
+    onSend: () -> Unit,
+    enabled: Boolean
+) {
     Surface(
         modifier = Modifier
             .fillMaxWidth()
             .navigationBarsPadding()
-            .padding(16.dp),
-        color = SurfaceDark,
-        shape = RoundedCornerShape(28.dp),
+            .padding(20.dp),
+        color = SurfaceCard,
+        shape = RoundedCornerShape(32.dp),
         border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.05f))
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp),
+            modifier = Modifier
+                .padding(horizontal = 8.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            IconButton(onClick = { /* Attach */ }) {
-                Icon(Icons.Default.Add, contentDescription = null, tint = TextMuted)
+            IconButton(
+                onClick = { /* Actions */ },
+                modifier = Modifier
+                    .size(40.dp)
+                    .background(Color.White.copy(alpha = 0.03f), CircleShape)
+            ) {
+                Icon(Icons.Default.Add, contentDescription = null, tint = Color.White.copy(alpha = 0.4f))
             }
             
             TextField(
                 value = value,
                 onValueChange = onValueChange,
-                placeholder = { Text("Message Oracle...", color = TextMuted) },
+                placeholder = { 
+                    Text(
+                        "Transmit objective...", 
+                        style = Typography.bodyLarge,
+                        color = Color.White.copy(alpha = 0.2f)
+                    ) 
+                },
                 modifier = Modifier.weight(1f),
                 colors = TextFieldDefaults.colors(
                     focusedContainerColor = Color.Transparent,
                     unfocusedContainerColor = Color.Transparent,
                     focusedIndicatorColor = Color.Transparent,
                     unfocusedIndicatorColor = Color.Transparent,
-                    focusedTextColor = TextPrimary,
-                    unfocusedTextColor = TextPrimary
+                    focusedTextColor = Color.White,
+                    unfocusedTextColor = Color.White
                 ),
                 maxLines = 5
             )
@@ -194,14 +285,15 @@ fun PremiumInputArea(value: String, onValueChange: (String) -> Unit, onSend: () 
                 onClick = onSend,
                 enabled = sendEnabled,
                 modifier = Modifier
+                    .size(48.dp)
                     .clip(CircleShape)
-                    .background(if (sendEnabled) TextPrimary else SurfaceLight)
+                    .background(if (sendEnabled) AccentGradient else Color.White.copy(alpha = 0.05f))
             ) {
                 Icon(
                     Icons.Default.ArrowUpward,
                     contentDescription = null,
-                    tint = if (sendEnabled) DeepBackground else TextMuted,
-                    modifier = Modifier.size(20.dp)
+                    tint = if (sendEnabled) Color.White else Color.White.copy(alpha = 0.2f),
+                    modifier = Modifier.size(24.dp)
                 )
             }
         }
@@ -209,15 +301,16 @@ fun PremiumInputArea(value: String, onValueChange: (String) -> Unit, onSend: () 
 }
 
 @Composable
-fun PremiumTypingIndicator() {
+fun TypingIndicator() {
     Row(
-        modifier = Modifier.padding(start = 40.dp),
-        horizontalArrangement = Arrangement.spacedBy(4.dp)
+        modifier = Modifier
+            .padding(start = 44.dp, top = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         repeat(3) { index ->
             val infiniteTransition = rememberInfiniteTransition()
-            val alpha by infiniteTransition.animateFloat(
-                initialValue = 0.3f,
+            val scale by infiniteTransition.animateFloat(
+                initialValue = 0.5f,
                 targetValue = 1f,
                 animationSpec = infiniteRepeatable(
                     animation = tween(600, delayMillis = index * 200),
@@ -227,7 +320,12 @@ fun PremiumTypingIndicator() {
             Box(
                 modifier = Modifier
                     .size(6.dp)
-                    .background(TextMuted.copy(alpha = alpha), CircleShape)
+                    .graphicsLayer {
+                        scaleX = scale
+                        scaleY = scale
+                        alpha = scale
+                    }
+                    .background(AccentPrimary, CircleShape)
             )
         }
     }

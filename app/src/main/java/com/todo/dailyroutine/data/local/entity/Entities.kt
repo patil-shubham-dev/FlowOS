@@ -72,7 +72,7 @@ data class LocalMessage(
 data class LocalMemory(
     @PrimaryKey val id: String,
     val userId: String,
-    val content: String,
+    val text: String,
     val embedding: String, // Stored as JSON array of floats
     val type: String = "fact", // "preference", "fact", "goal", "task", "context"
     val importance: Float = 1.0f,
@@ -109,4 +109,15 @@ data class LocalJournalStreak(
     val currentStreak: Int = 0,
     val longestStreak: Int = 0,
     val lastEntryDate: String? = null // ISO Date
+)
+@Entity(tableName = "bio_data")
+data class LocalBioData(
+    @PrimaryKey(autoGenerate = true) val id: Int = 0,
+    val userId: String,
+    val date: String, // ISO date
+    val steps: Int = 0,
+    val sleepMinutes: Int = 0,
+    val avgHeartRate: Int = 0,
+    val hrvScore: Int = 0, // Heart Rate Variability
+    val timestamp: Long = System.currentTimeMillis()
 )

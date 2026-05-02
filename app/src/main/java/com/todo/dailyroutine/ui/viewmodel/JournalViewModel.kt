@@ -5,22 +5,21 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.todo.dailyroutine.data.repository.JournalRepository
 import com.todo.dailyroutine.data.local.entity.LocalJournalEntry
-import com.todo.dailyroutine.util.VoiceToTextManager
+import com.todo.dailyroutine.util.WhisperTranscriptionManager
 import com.todo.dailyroutine.data.repository.AiRepository
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.delay
 
 class JournalViewModel(
     private val repository: JournalRepository,
-    private val voiceManager: VoiceToTextManager,
+    private val whisperManager: WhisperTranscriptionManager,
     private val aiRepository: AiRepository
 ) : ViewModel() {
     val entries: StateFlow<List<LocalJournalEntry>> = repository.getAllEntries()
         .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
-    val isVoiceListening = voiceManager.isListening
-    val voiceText = voiceManager.text
+    val isVoiceListening = whisperManager.isListening
+    val voiceText = whisperManager.text
 
     private val _streak = MutableStateFlow(0)
     val streak = _streak.asStateFlow()
@@ -66,25 +65,23 @@ class JournalViewModel(
     }
 
     fun startVoiceRecording() {
-        voiceManager.startListening()
+        whisperManager.startListening()
     }
 
     fun stopVoiceRecording() {
-        voiceManager.stopListening()
-    }
-
-    override fun onCleared() {
-        super.onCleared()
-        // Maybe don't destroy if shared, but usually fine
+        viewModelScope.launch {
+            whisperManager.stopListening()
+        }
     }
 }
 
 class JournalViewModelFactory(
     private val repository: JournalRepository,
-    private val voiceManager: VoiceToTextManager,
+    private val whisperManager: WhisperTranscriptionManager,
     private val aiRepository: AiRepository
 ) : ViewModelProvider.Factory {
+    @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        return JournalViewModel(repository, voiceManager, aiRepository) as T
+        return JournalViewModel(repository, whisperManager, aiRepository) as T
     }
 }

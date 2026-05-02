@@ -22,21 +22,12 @@ object ApiClient {
         .readTimeout(20, TimeUnit.SECONDS)
         .build()
 
-    private val supabaseRetrofit = Retrofit.Builder()
-        .baseUrl("${BuildConfig.SUPABASE_URL}/")
-        .addConverterFactory(GsonConverterFactory.create())
-        .client(okHttp)
-        .build()
-
     private val aiRetrofit = Retrofit.Builder()
         .baseUrl("https://generativelanguage.googleapis.com/")
         .addConverterFactory(GsonConverterFactory.create())
         .client(okHttp)
         .build()
 
-    val supabaseAuthApi: SupabaseAuthApi = supabaseRetrofit.create(SupabaseAuthApi::class.java)
-    val customAuthApi: CustomAuthApi = supabaseRetrofit.create(CustomAuthApi::class.java)
-    val supabaseRestApi: SupabaseRestApi = supabaseRetrofit.create(SupabaseRestApi::class.java)
     val aiStudioApi: AiStudioApi = aiRetrofit.create(AiStudioApi::class.java)
-    val universalAiApi: UniversalAiApi = supabaseRetrofit.create(UniversalAiApi::class.java) // Uses the same base okHttp
+    val universalAiApi: UniversalAiApi = aiRetrofit.create(UniversalAiApi::class.java)
 }

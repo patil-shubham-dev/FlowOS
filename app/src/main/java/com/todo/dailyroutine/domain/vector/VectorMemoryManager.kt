@@ -8,11 +8,11 @@ import java.util.UUID
 
 class VectorMemoryManager(
     private val memoryDao: MemoryDao,
-    private val vectorEngine: VectorEngine
+    val vectorEngine: VectorEngine
 ) {
     
-    suspend fun storeMemory(userId: String, content: String, type: String, importance: Float) = withContext(Dispatchers.IO) {
-        val embedding = vectorEngine.generateEmbedding(content)
+    suspend fun storeMemory(userId: String, text: String, type: String, importance: Float) = withContext(Dispatchers.IO) {
+        val embedding = vectorEngine.generateEmbedding(text)
         val allMemories = memoryDao.getAllMemories(userId)
         
         // Deduplication: Check for similarity > 0.9
@@ -29,7 +29,7 @@ class VectorMemoryManager(
         if (existingMemory != null) {
             // Update existing memory
             val updated = existingMemory.copy(
-                content = content,
+                text = text,
                 importance = maxOf(existingMemory.importance, importance),
                 timestamp = System.currentTimeMillis()
             )
@@ -39,7 +39,7 @@ class VectorMemoryManager(
             val newMemory = LocalMemory(
                 id = UUID.randomUUID().toString(),
                 userId = userId,
-                content = content,
+                text = text,
                 embedding = vectorEngine.floatArrayToJson(embedding),
                 type = type,
                 importance = importance

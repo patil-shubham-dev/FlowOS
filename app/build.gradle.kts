@@ -20,15 +20,9 @@ android {
             useSupportLibrary = true
         }
 
-        val supabaseUrl = (project.findProperty("SUPABASE_URL") as String?)
-            ?: "https://teranqxkhvxzxxvskhtj.supabase.co"
-        val supabaseAnon = (project.findProperty("SUPABASE_ANON_KEY") as String?)
-            ?: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRlcmFucXhraHZ4enh4dnNraHRqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1MDY3MjEsImV4cCI6MjA5MTA4MjcyMX0.Ur20H7AP8aHGAZoNK1DkYnshA4h1WNnPScEi4I--Wf4"
         val aiApiKey = (project.findProperty("AI_STUDIO_API_KEY") as String?)
             ?: "REPLACE_WITH_AI_API_KEY"
 
-        buildConfigField("String", "SUPABASE_URL", "\"$supabaseUrl\"")
-        buildConfigField("String", "SUPABASE_ANON_KEY", "\"$supabaseAnon\"")
         buildConfigField("String", "AI_STUDIO_API_KEY", "\"$aiApiKey\"")
     }
 
