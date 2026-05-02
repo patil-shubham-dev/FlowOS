@@ -18,6 +18,7 @@ import androidx.compose.ui.*
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import com.todo.dailyroutine.data.model.ChatMessage
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -288,7 +289,10 @@ fun InputArea(
                 modifier = Modifier
                     .size(48.dp)
                     .clip(CircleShape)
-                    .background(if (sendEnabled) AccentGradient else Color.White.copy(alpha = 0.05f))
+                    .then(
+                        if (sendEnabled) Modifier.background(AccentGradient)
+                        else Modifier.background(Color.White.copy(alpha = 0.05f))
+                    )
             ) {
                 Icon(
                     Icons.Default.ArrowUpward,
