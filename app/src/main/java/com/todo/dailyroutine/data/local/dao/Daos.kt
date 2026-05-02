@@ -115,6 +115,9 @@ interface MemoryDao {
     
     @Query("UPDATE ai_memories SET importance = importance + 0.2, lastUsed = :now WHERE id = :id")
     suspend fun reinforceMemory(id: String, now: Long = System.currentTimeMillis())
+
+    @Query("SELECT * FROM ai_memories WHERE userId = :userId AND type = :type")
+    suspend fun getMemoriesByType(userId: String, type: String): List<LocalMemory>
 }
 
 @Dao
