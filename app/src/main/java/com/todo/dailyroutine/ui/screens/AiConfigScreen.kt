@@ -277,6 +277,7 @@ fun ScrollableRow(
     )
 }
 
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 fun FlowRow(
     modifier: Modifier = Modifier,
