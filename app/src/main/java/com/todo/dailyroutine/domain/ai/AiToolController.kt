@@ -66,7 +66,7 @@ class AiToolController(
             mapOf("type" to "function", "function" to mapOf(
                 "name" to "get_daily_summary",
                 "description" to "Retrieve the current day's progress and Flow Score",
-                "parameters" to mapOf("type" to "object", "properties" to mapOf())
+                "parameters" to mapOf("type" to "object", "properties" to mapOf<String, Any>())
             ))
         )
     }
