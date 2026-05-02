@@ -28,7 +28,7 @@ fun DashboardScreen(homeViewModel: HomeViewModel, aiViewModel: AiViewModel) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(DeepBackground)
+            .background(BackgroundBase)
     ) {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
@@ -46,15 +46,15 @@ fun DashboardScreen(homeViewModel: HomeViewModel, aiViewModel: AiViewModel) {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column {
-                        Text("Protocol", style = PremiumTypography.labelMedium, color = TextSecondary)
-                        Text("Operational", style = PremiumTypography.headlineMedium)
+                        Text("Protocol", style = Typography.labelMedium, color = TextSecondary)
+                        Text("Operational", style = Typography.headlineMedium, color = Color.White)
                     }
                     Surface(
                         modifier = Modifier.size(48.dp),
                         shape = CircleShape,
-                        color = SurfaceDark
+                        color = SurfaceCard
                     ) {
-                        Icon(Icons.Default.Cyclone, contentDescription = null, tint = AccentFlow, modifier = Modifier.padding(12.dp))
+                        Icon(Icons.Default.Cyclone, contentDescription = null, tint = AccentPrimary, modifier = Modifier.padding(12.dp))
                     }
                 }
             }
@@ -75,7 +75,7 @@ fun DashboardScreen(homeViewModel: HomeViewModel, aiViewModel: AiViewModel) {
                         label = "Flow",
                         value = "${state.tasks.count { it.completed }}/${state.tasks.size}",
                         modifier = Modifier.weight(1f),
-                        color = AccentFlow
+                        color = AccentPrimary
                     )
                 }
             }
@@ -87,7 +87,7 @@ fun DashboardScreen(homeViewModel: HomeViewModel, aiViewModel: AiViewModel) {
                         .fillMaxWidth()
                         .height(280.dp),
                     shape = RoundedCornerShape(32.dp),
-                    color = SurfaceDark,
+                    color = SurfaceCard,
                     border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.05f))
                 ) {
                     Box(contentAlignment = Alignment.Center) {
@@ -118,8 +118,8 @@ fun DashboardScreen(homeViewModel: HomeViewModel, aiViewModel: AiViewModel) {
                             Icon(Icons.Default.Cyclone, contentDescription = null, tint = Color(0xFF30D158))
                             Spacer(Modifier.width(16.dp))
                             Column {
-                                Text("Oracle Insight", style = PremiumTypography.labelMedium, color = Color(0xFF30D158))
-                                Text(insight, style = PremiumTypography.bodyLarge, fontWeight = FontWeight.Medium)
+                                Text("Oracle Insight", style = Typography.labelMedium, color = Color(0xFF30D158))
+                                Text(insight, style = Typography.bodyLarge, fontWeight = FontWeight.Medium, color = Color.White)
                             }
                         }
                     }
@@ -131,18 +131,18 @@ fun DashboardScreen(homeViewModel: HomeViewModel, aiViewModel: AiViewModel) {
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(24.dp),
-                    color = AccentFlow.copy(alpha = 0.1f),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, AccentFlow.copy(alpha = 0.2f))
+                    color = AccentPrimary.copy(alpha = 0.1f),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, AccentPrimary.copy(alpha = 0.2f))
                 ) {
                     Row(
                         modifier = Modifier.padding(20.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(Icons.Default.Bolt, contentDescription = null, tint = AccentFlow)
+                        Icon(Icons.Default.Bolt, contentDescription = null, tint = AccentPrimary)
                         Spacer(Modifier.width(16.dp))
                         Column {
-                            Text("Next Best Action", style = PremiumTypography.labelMedium, color = AccentFlow)
-                            Text(state.nextBestAction, style = PremiumTypography.bodyLarge, fontWeight = FontWeight.Medium)
+                            Text("Next Best Action", style = Typography.labelMedium, color = AccentPrimary)
+                            Text(state.nextBestAction, style = Typography.bodyLarge, fontWeight = FontWeight.Medium, color = Color.White)
                         }
                     }
                 }
@@ -158,13 +158,13 @@ fun MetricCard(label: String, value: String, modifier: Modifier, color: Color) {
     Surface(
         modifier = modifier,
         shape = RoundedCornerShape(24.dp),
-        color = SurfaceDark,
+        color = SurfaceCard,
         border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.05f))
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
-            Text(label, style = PremiumTypography.labelMedium, color = TextSecondary)
+            Text(label, style = Typography.labelMedium, color = TextSecondary)
             Spacer(Modifier.height(4.dp))
-            Text(value, style = PremiumTypography.headlineMedium, color = color)
+            Text(value, style = Typography.headlineMedium, color = color)
         }
     }
 }

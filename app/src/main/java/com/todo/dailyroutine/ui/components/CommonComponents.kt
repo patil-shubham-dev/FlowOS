@@ -329,7 +329,7 @@ fun DashboardScaffold(
                                 .size(48.dp)
                                 .background(Color.White.copy(alpha = 0.05f), CircleShape)
                         ) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, tint = Color.White)
+                            Icon(Icons.Filled.ArrowBack, contentDescription = null, tint = Color.White)
                         }
                     }
                     Text(
