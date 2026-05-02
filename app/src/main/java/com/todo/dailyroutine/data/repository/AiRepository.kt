@@ -9,6 +9,8 @@ import com.todo.dailyroutine.data.remote.dto.*
 import okhttp3.ResponseBody
 import retrofit2.Response
 import org.json.JSONObject
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 class AiRepository(
     private val aiApi: AiStudioApi,

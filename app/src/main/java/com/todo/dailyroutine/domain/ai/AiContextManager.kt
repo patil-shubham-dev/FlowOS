@@ -8,6 +8,7 @@ import com.todo.dailyroutine.data.repository.AiRepository
 import com.todo.dailyroutine.domain.vector.VectorMemoryManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import com.todo.dailyroutine.domain.vector.MemoryPipeline
 import org.json.JSONObject
 
 class AiContextManager(

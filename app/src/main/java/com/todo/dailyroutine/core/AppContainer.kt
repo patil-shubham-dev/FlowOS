@@ -10,6 +10,7 @@ import com.todo.dailyroutine.domain.ai.*
 import com.todo.dailyroutine.ui.viewmodel.JournalViewModelFactory
 import com.todo.dailyroutine.domain.vector.VectorEngine
 import com.todo.dailyroutine.domain.vector.VectorMemoryManager
+import com.todo.dailyroutine.domain.vector.MemoryPipeline
 import com.todo.dailyroutine.util.WhisperTranscriptionManager
 
 class AppContainer(private val context: Context) {
