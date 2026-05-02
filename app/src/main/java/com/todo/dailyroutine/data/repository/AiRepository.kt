@@ -11,6 +11,10 @@ import retrofit2.Response
 import org.json.JSONObject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.asRequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
 
 class AiRepository(
     private val aiApi: AiStudioApi,
@@ -286,9 +290,10 @@ class AiRepository(
 
         val headers = mapOf("Authorization" to "Bearer ${activeConfig.apiKey}")
         
-        val requestFile = okhttp3.RequestBody.create(okhttp3.MediaType.parse("audio/*"), file)
-        val body = okhttp3.MultipartBody.Part.createFormData("file", file.name, requestFile)
-        val model = okhttp3.RequestBody.create(okhttp3.MediaType.parse("text/plain"), "whisper-1")
+        val mediaType = "audio/*".toMediaTypeOrNull()
+        val requestFile = file.asRequestBody(mediaType)
+        val body = MultipartBody.Part.createFormData("file", file.name, requestFile)
+        val model = "whisper-1".toRequestBody("text/plain".toMediaTypeOrNull())
 
         try {
             val response = universalAiApi.transcribe(url, headers, body, model)
