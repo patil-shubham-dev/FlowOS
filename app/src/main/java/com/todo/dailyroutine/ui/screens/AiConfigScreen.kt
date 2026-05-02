@@ -62,6 +62,7 @@ fun AiConfigScreen(viewModel: AiViewModel, onBack: () -> Unit) {
                 color = SurfaceCard,
                 border = BorderStroke(1.dp, Color.White.copy(alpha = 0.05f))
             ) {
+                Column(modifier = Modifier.padding(24.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
                             "$selectedProvider Configuration",
