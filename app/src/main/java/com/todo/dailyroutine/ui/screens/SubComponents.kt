@@ -11,9 +11,7 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.*
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.text.font.FontWeight
@@ -153,7 +151,7 @@ fun JournalStreakHeader(streak: Int) {
             Box(
                 modifier = Modifier
                     .size(56.dp)
-                    .background(AccentGradient.copy(alpha = 0.1f), CircleShape)
+                    .background(AccentPrimary.copy(alpha = 0.1f), CircleShape)
                     .border(1.dp, Color.White.copy(alpha = 0.05f), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
@@ -293,71 +291,4 @@ fun FlowTaskItem(task: TaskItem, onToggle: () -> Unit) {
     }
 }
 
-@Composable
-fun TypingIndicator() {
-    Row(
-        modifier = Modifier
-            .padding(horizontal = 24.dp, vertical = 12.dp)
-            .clip(RoundedCornerShape(16.dp))
-            .background(SurfaceCard)
-            .padding(12.dp),
-        horizontalArrangement = Arrangement.spacedBy(6.dp)
-    ) {
-        repeat(3) { index ->
-            val infiniteTransition = rememberInfiniteTransition()
-            val scale by infiniteTransition.animateFloat(
-                initialValue = 0.4f,
-                targetValue = 1f,
-                animationSpec = infiniteRepeatable(
-                    animation = tween(600, delayMillis = index * 200),
-                    repeatMode = RepeatMode.Reverse
-                )
-            )
-            Box(
-                modifier = Modifier
-                    .size(6.dp)
-                    .scale(scale)
-                    .background(AccentPrimary, CircleShape)
-            )
-        }
-    }
-}
 
-@Composable
-fun ChatBubble(message: ChatMessage) {
-    val isUser = message.role == "user"
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        horizontalAlignment = if (isUser) Alignment.End else Alignment.Start
-    ) {
-        Surface(
-            color = if (isUser) AccentPrimary else SurfaceCard,
-            shape = RoundedCornerShape(
-                topStart = 24.dp,
-                topEnd = 24.dp,
-                bottomStart = if (isUser) 24.dp else 4.dp,
-                bottomEnd = if (isUser) 4.dp else 24.dp
-            ),
-            modifier = Modifier.widthIn(max = 300.dp),
-            border = if (isUser) null else BorderStroke(1.dp, Color.White.copy(alpha = 0.05f))
-        ) {
-            Text(
-                text = message.content,
-                modifier = Modifier.padding(horizontal = 20.dp, vertical = 14.dp),
-                color = Color.White,
-                style = Typography.bodyLarge,
-                lineHeight = 24.sp
-            )
-        }
-        Spacer(Modifier.height(6.dp))
-        Text(
-            text = if (isUser) "IDENTITY" else "ORACLE",
-            style = Typography.labelSmall,
-            color = if (isUser) AccentPrimary.copy(alpha = 0.7f) else TextSecondary,
-            letterSpacing = 1.sp,
-            modifier = Modifier.padding(horizontal = 12.dp)
-        )
-    }
-}

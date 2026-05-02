@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import com.todo.dailyroutine.domain.gamification.GamificationManager
 import com.todo.dailyroutine.domain.scheduling.AiScheduler
+import com.todo.dailyroutine.domain.scheduling.ScheduleConflictDetector
 import org.burnoutcrew.reorderable.ItemPosition
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first

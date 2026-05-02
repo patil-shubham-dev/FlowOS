@@ -89,6 +89,9 @@ interface MessageDao {
     @Insert
     suspend fun insertMessage(message: LocalMessage): Long
 
+    @Query("SELECT COUNT(*) FROM ai_messages WHERE userId = :userId")
+    suspend fun getMessageCount(userId: String): Int
+
     @Query("DELETE FROM ai_messages")
     suspend fun clearHistory()
 }

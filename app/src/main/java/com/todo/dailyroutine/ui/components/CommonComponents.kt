@@ -345,33 +345,3 @@ fun DashboardScaffold(
     }
 }
 
-@Composable
-fun AnimatedCheckbox(
-    checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val transition = updateTransition(checked, label = "checkbox")
-    val scale by transition.animateFloat(label = "scale") { if (it) 1f else 0.8f }
-    val alpha by transition.animateFloat(label = "alpha") { if (it) 1f else 0.4f }
-    val color by transition.animateColor(label = "color") { if (it) SuccessGreen else Color.White.copy(alpha = 0.1f) }
-
-    Box(
-        modifier = modifier
-            .size(32.dp)
-            .scale(scale)
-            .background(color.copy(alpha = 0.1f), CircleShape)
-            .border(1.dp, color, CircleShape)
-            .clickable { onCheckedChange(!checked) },
-        contentAlignment = Alignment.Center
-    ) {
-        if (checked) {
-            Icon(
-                Icons.Default.Check,
-                contentDescription = null,
-                tint = SuccessGreen,
-                modifier = Modifier.size(18.dp)
-            )
-        }
-    }
-}

@@ -84,8 +84,9 @@ data class LocalMemory(
 data class ConversationSummary(
     @PrimaryKey val userId: String,
     val currentSummary: String,
-    val lastSummarizedMessageId: Int,
-    val messageCountSinceSummary: Int = 0
+    val lastSummarizedMessageId: Int = 0,
+    val messageCountSinceSummary: Int = 0,
+    val lastUpdated: Long = System.currentTimeMillis()
 )
 
 @Entity(tableName = "flow_scores")
