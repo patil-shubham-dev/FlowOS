@@ -7,10 +7,10 @@ import com.todo.dailyroutine.data.repository.*
 import com.todo.dailyroutine.data.session.SessionManager
 import com.todo.dailyroutine.notifications.FlowNotificationEngine
 import com.todo.dailyroutine.domain.ai.*
-import com.todo.dailyroutine.util.VoiceToTextManager
 import com.todo.dailyroutine.ui.viewmodel.JournalViewModelFactory
 import com.todo.dailyroutine.domain.vector.VectorEngine
 import com.todo.dailyroutine.domain.vector.VectorMemoryManager
+import com.todo.dailyroutine.util.WhisperTranscriptionManager
 
 class AppContainer(private val context: Context) {
     init {
@@ -36,20 +36,28 @@ class AppContainer(private val context: Context) {
         FlowScoreRepository(db.flowScoreDao())
     }
 
-    val journalRepository by lazy {
-        JournalRepository(db.journalDao(), db.journalStreakDao(), memoryPipeline)
-    }
-
     val aiRepository by lazy { 
         AiRepository(ApiClient.aiStudioApi, ApiClient.universalAiApi) 
     }
 
-    val journalViewModelFactory by lazy {
-        JournalViewModelFactory(journalRepository, voiceToTextManager, aiRepository)
-    }
-
     val aiConfigRepository by lazy { 
         AiConfigRepository(db.aiConfigDao(), sessionManager) 
+    }
+
+    val whisperTranscriptionManager by lazy {
+        WhisperTranscriptionManager(context, aiRepository, aiConfigRepository)
+    }
+
+    val vectorEngine by lazy { VectorEngine(context) }
+    val vectorMemoryManager by lazy { VectorMemoryManager(db.memoryDao(), vectorEngine) }
+    val memoryPipeline by lazy { MemoryPipeline(aiRepository, vectorMemoryManager) }
+
+    val journalRepository by lazy {
+        JournalRepository(db.journalDao(), db.journalStreakDao(), memoryPipeline)
+    }
+
+    val journalViewModelFactory by lazy {
+        JournalViewModelFactory(journalRepository, whisperTranscriptionManager, aiRepository)
     }
 
     val oracleToolExecutor by lazy {
@@ -59,10 +67,6 @@ class AppContainer(private val context: Context) {
     val aiToolController by lazy {
         AiToolController(oracleToolExecutor, aiRepository, sessionManager)
     }
-
-    val vectorEngine by lazy { VectorEngine(context) }
-    val vectorMemoryManager by lazy { VectorMemoryManager(db.memoryDao(), vectorEngine) }
-    val memoryPipeline by lazy { MemoryPipeline(aiRepository, vectorMemoryManager) }
 
     val aiContextManager by lazy { 
         AiContextManager(
@@ -84,13 +88,5 @@ class AppContainer(private val context: Context) {
 
     val bioAnalyticsRepository by lazy {
         BioAnalyticsRepository(db.bioDataDao())
-    }
-
-    val whisperTranscriptionManager by lazy {
-        WhisperTranscriptionManager(context, aiRepository, aiConfigRepository)
-    }
-
-    val journalViewModelFactory by lazy {
-        JournalViewModelFactory(journalRepository, whisperTranscriptionManager, aiRepository)
     }
 }
