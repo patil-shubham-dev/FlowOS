@@ -1,8 +1,8 @@
 # <p align="center"><img src="assets/logo.png" width="128" /><br>FlowOS</p>
 
 <p align="center">
-  <b>The First Local-First, Performance-Obsessed Intelligence Operating System.</b><br>
-  <i>Synchronizing human execution with machine precision.</i>
+  <b>The First Mobile-Exclusive, Local-First, Performance-Obsessed Intelligence Operating System.</b><br>
+  <i>Synchronizing human execution with machine precision on the go.</i>
 </p>
 
 <p align="center">
@@ -15,7 +15,7 @@
 ---
 
 ## 🌌 The Vision
-**FlowOS** is not just another productivity app. It is a **Neural Augmentation Layer** designed for high-performance individuals who demand absolute sovereignty over their data and cognitive state. It transforms the concept of "management" into "orchestration," leveraging advanced AI agents to audit your life in real-time and push you toward a state of consistent, high-fidelity flow.
+**FlowOS** is a **Mobile-First Neural Augmentation Layer** designed for high-performance individuals who demand absolute sovereignty over their data and cognitive state. It transforms your mobile device into a dedicated intelligence hub, leveraging advanced AI agents to audit your life in real-time.
 
 ---
 
@@ -45,6 +45,14 @@ FlowOS is designed for focus. The UI follows a strict **"Deep Obsidian & Electri
 *   **OLED Optimization**: Pure blacks (#0B0B0F) for maximum energy efficiency and visual depth.
 *   **Neural Orb**: A central dashboard visualizer representing your "Flow Score" through multi-layer radial gradients and rotating energy rings.
 *   **Haptic Rich Feedback**: Every interaction is anchored with subtle, high-frequency haptics to simulate a neural interface.
+
+---
+
+## 📱 Mobile-First Architecture
+FlowOS is engineered exclusively for mobile environments. It is **not** designed for tablets or desktops, as its cognitive models are tuned for high-frequency, on-the-go interactions.
+*   **OLED Pure Black**: Optimized for mobile battery longevity and night-time reflection.
+*   **One-Handed Omni-HUD**: All intelligence triggers are positioned for easy thumb access.
+*   **Background Orchestration**: Leverages Android WorkManager for low-power neural auditing.
 
 ---
 
