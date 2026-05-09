@@ -1,4 +1,4 @@
-# <p align="center"><img src="assets/logo.png" width="128" /><br>FlowOS</p>
+# <p align="center"><img src="assets/logo.png" width="128" /><br>FlowOS: The Mobile Intelligence Protocol</p>
 
 <p align="center">
   <b>The First Mobile-Exclusive, Local-First, Performance-Obsessed Intelligence Operating System.</b><br>
@@ -6,8 +6,8 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-2.2-blue?style=for-the-badge&logo=android" />
-  <img src="https://img.shields.io/badge/Architecture-Clean%20MVVM-green?style=for-the-badge" />
+  <img src="https://img.shields.io/badge/Platform-Android%20Only-green?style=for-the-badge&logo=android" />
+  <img src="https://img.shields.io/badge/Architecture-Native%20Compose-blue?style=for-the-badge" />
   <img src="https://img.shields.io/badge/Intelligence-Agentic-purple?style=for-the-badge" />
   <img src="https://img.shields.io/badge/Data-Local%20First-orange?style=for-the-badge" />
 </p>
@@ -99,21 +99,44 @@ sequenceDiagram
 
 ---
 
-## 🚀 Getting Started
+## 🚀 Installation & Setup
 
-### 1. **Initialize the Protocol**
+FlowOS is a **Native Android Application**. Follow these steps to initialize the protocol on your mobile device.
+
+### **1. Prerequisites**
+*   **Android Device**: Running Android 8.0 (API 26) or higher.
+*   **Android Studio**: Ladybug or newer (for building from source).
+*   **Memory**: Minimum 4GB RAM recommended for on-device ONNX models.
+
+### **2. Clone & Build**
 ```bash
+# Clone the repository
 git clone https://github.com/patil-shubham-dev/FlowOS.git
+
+# Open the project in Android Studio
+# Wait for Gradle to sync (includes downloading ONNX MiniLM models)
 ```
 
-### 2. **Establish Neural Links**
-1. Launch FlowOS.
-2. Navigate to **System > AI Protocol**.
-3. Input your API key for OpenAI, Anthropic, or Nvidia.
-4. Select your preferred model (e.g., `gpt-4o` or `claude-3-5-sonnet`).
+### **3. API Configuration**
+FlowOS requires an external Intelligence Key to power the Oracle.
+1. Create a `local.properties` file in the root directory (if not present).
+2. Add your Google AI Studio key:
+   ```properties
+   AI_STUDIO_API_KEY=your_key_here
+   ```
 
-### 3. **Enter Flow State**
-Use the **Omni-Input Overlay** (Add Button) to start dictating your objectives and habits. Let the Oracle handle the rest.
+### **4. Deployment**
+1. Connect your Android device via USB or WiFi Debugging.
+2. Click **Run 'app'** in Android Studio.
+3. Accept the mandatory **Biometric & Audio permissions** upon first launch.
+
+---
+
+## 🛠 Operation Manual
+
+1.  **Establish Neural Links**: Navigate to **System > AI Protocol** and input your preferred provider key (OpenAI/Claude/Nvidia).
+2.  **Enter Flow State**: Long-press the **Omni-Input (Add)** button to trigger voice dictation or tap for text input.
+3.  **Trust the Oracle**: FlowOS will begin background auditing automatically. Check the **Oracle tab** for proactive nudges.
 
 ---
 
