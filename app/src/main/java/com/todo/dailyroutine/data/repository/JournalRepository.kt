@@ -5,6 +5,7 @@ import com.todo.dailyroutine.data.local.dao.JournalStreakDao
 import com.todo.dailyroutine.data.local.entity.LocalJournalEntry
 import com.todo.dailyroutine.data.local.entity.LocalJournalStreak
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import java.util.UUID
 
@@ -59,7 +60,7 @@ class JournalRepository(
         var currentDate = java.time.LocalDate.now()
         
         // If no entry today, check if yesterday was part of streak
-        if (dates.first() < currentDate.minusDays(1)) return 0
+        if (dates[0] < currentDate.minusDays(1)) return 0
         
         for (date in dates) {
             if (date == currentDate || date == currentDate.minusDays(1)) {

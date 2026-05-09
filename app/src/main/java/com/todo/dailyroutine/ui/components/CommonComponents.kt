@@ -1,7 +1,8 @@
 package com.todo.dailyroutine.ui.components
 
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.animateColor
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
@@ -33,101 +34,100 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import com.todo.dailyroutine.ui.theme.*
 import com.todo.dailyroutine.ui.utils.shimmerEffect
-import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.drawscope.rotate
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.PathMeasure
-import androidx.compose.ui.graphics.nativeCanvas
-import android.graphics.BlurMaskFilter
-import android.graphics.Paint
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.foundation.Canvas
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathMeasure
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.toArgb
+import android.graphics.BlurMaskFilter
+import android.graphics.Paint
+import androidx.compose.ui.graphics.drawscope.rotate
 
-        }
-    }
-}
+
 
 @Composable
 fun FlowLogo(
     modifier: Modifier = Modifier,
     showGlow: Boolean = true
 ) {
+    val infiniteTransition = rememberInfiniteTransition()
+    val pulseScale by infiniteTransition.animateFloat(
+        initialValue = 0.95f,
+        targetValue = 1.05f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2000, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        )
+    )
+
     Box(
         modifier = modifier
             .aspectRatio(1f)
             .padding(8.dp),
         contentAlignment = Alignment.Center
     ) {
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            val strokeWidth = size.width * 0.08f
-            val center = this.center
+        Canvas(modifier = Modifier.fillMaxSize().graphicsLayer(scaleX = pulseScale, scaleY = pulseScale)) {
+            val strokeWidth = size.width * 0.05f
             
-            // Outer Ring (Broken)
-            drawArc(
-                color = Color.White,
-                startAngle = -45f,
-                sweepAngle = 270f,
-                useCenter = false,
-                style = Stroke(width = strokeWidth, cap = androidx.compose.ui.graphics.StrokeCap.Round)
+            // Outer Glowing Ring (Gradient)
+            drawCircle(
+                brush = androidx.compose.ui.graphics.Brush.linearGradient(
+                    colors = listOf(AccentPrimary, AccentSecondary),
+                    start = Offset.Zero,
+                    end = Offset(size.width, size.height)
+                ),
+                radius = size.width * 0.45f,
+                style = Stroke(width = strokeWidth)
             )
 
-            // The "F" / "C" inner tail
-            val path = Path().apply {
-                moveTo(size.width * 0.45f, size.height * 0.85f)
-                cubicTo(
-                    size.width * 0.45f, size.height * 0.4f,
-                    size.width * 0.45f, size.height * 0.4f,
-                    size.width * 0.85f, size.height * 0.4f
-                )
+            // Central Node
+            drawCircle(
+                color = Color.White,
+                radius = size.width * 0.08f
+            )
+
+            // Protocol Lightning Bolt
+            val boltPath = Path().apply {
+                moveTo(size.width * 0.58f, size.height * 0.32f)
+                lineTo(size.width * 0.42f, size.height * 0.52f)
+                lineTo(size.width * 0.52f, size.height * 0.52f)
+                lineTo(size.width * 0.47f, size.height * 0.72f)
+                lineTo(size.width * 0.63f, size.height * 0.52f)
+                lineTo(size.width * 0.53f, size.height * 0.52f)
+                close()
             }
             drawPath(
-                path = path,
-                color = Color.White,
-                style = Stroke(width = strokeWidth, cap = androidx.compose.ui.graphics.StrokeCap.Round)
-            )
-
-            // The Blue Dot Glow
-            if (showGlow) {
-                drawIntoCanvas { canvas ->
-                    val paint = Paint().apply {
-                        color = AccentPrimary.toArgb()
-                        maskFilter = BlurMaskFilter(size.width * 0.15f, BlurMaskFilter.Blur.NORMAL)
-                    }
-                    canvas.nativeCanvas.drawCircle(
-                        size.width * 0.35f,
-                        size.height * 0.65f,
-                        size.width * 0.1f,
-                        paint
-                    )
-                }
-            }
-
-            // The Blue Dot
-            drawCircle(
-                color = AccentPrimary,
-                radius = size.width * 0.04f,
-                center = androidx.compose.ui.geometry.Offset(size.width * 0.35f, size.height * 0.65f)
+                path = boltPath,
+                brush = androidx.compose.ui.graphics.Brush.linearGradient(
+                    colors = listOf(Color.White, AccentPrimary),
+                    start = Offset(size.width * 0.4f, size.height * 0.3f),
+                    end = Offset(size.width * 0.6f, size.height * 0.7f)
+                )
             )
             
-            // Orbital lines (Subtle)
-            for (i in 1..3) {
-                drawArc(
-                    color = Color.White.copy(alpha = 0.1f * i),
-                    startAngle = 135f,
-                    sweepAngle = 90f,
-                    useCenter = false,
-                    style = Stroke(width = 1.dp.toPx()),
-                    size = androidx.compose.ui.geometry.Size(
-                        size.width * (0.4f + i * 0.1f),
-                        size.height * (0.4f + i * 0.1f)
-                    ),
-                    topLeft = androidx.compose.ui.geometry.Offset(
-                        size.width * (0.3f - i * 0.05f),
-                        size.height * (0.3f - i * 0.05f)
-                    )
+            // Neural Connections
+            val connections = listOf(
+                Offset(size.width * 0.5f, size.height * 0.15f),
+                Offset(size.width * 0.5f, size.height * 0.85f),
+                Offset(size.width * 0.15f, size.height * 0.5f),
+                Offset(size.width * 0.85f, size.height * 0.5f)
+            )
+            connections.forEach { endPoint ->
+                drawLine(
+                    color = AccentSecondary.copy(alpha = 0.5f),
+                    start = center,
+                    end = endPoint,
+                    strokeWidth = 1.dp.toPx()
+                )
+                drawCircle(
+                    color = AccentPrimary,
+                    radius = 3.dp.toPx(),
+                    center = endPoint
                 )
             }
         }
@@ -493,4 +493,34 @@ fun FlowStatCard(
         }
     }
 }
-
+@Composable
+fun ActionPill(
+    label: String,
+    icon: ImageVector,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    isLoading: Boolean = false
+) {
+    Surface(
+        modifier = modifier
+            .height(56.dp)
+            .clip(RoundedCornerShape(28.dp))
+            .clickable { if (!isLoading) onClick() },
+        color = SurfaceCard,
+        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.05f))
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            if (isLoading) {
+                CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp, color = AccentPrimary)
+            } else {
+                Icon(icon, contentDescription = null, tint = AccentPrimary, modifier = Modifier.size(20.dp))
+            }
+            Spacer(Modifier.width(10.dp))
+            Text(label, style = Typography.labelLarge, color = Color.White, fontWeight = FontWeight.Bold)
+        }
+    }
+}

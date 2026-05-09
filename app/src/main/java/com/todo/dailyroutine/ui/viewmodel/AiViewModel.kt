@@ -260,7 +260,7 @@ class AiViewModel(
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(protocolLoading = true, error = null)
             val userId = "user_default"
-            val context = contextManager.getOptimizedContext(userId)
+            val context = contextManager.getOptimizedContext(userId, "")
             
             val prompt = """
                 As the FlowOS Neural Oracle, analyze the user's current context, recent journal vibes, and pending tasks.

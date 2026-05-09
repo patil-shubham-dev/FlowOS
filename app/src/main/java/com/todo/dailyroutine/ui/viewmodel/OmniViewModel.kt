@@ -10,6 +10,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import com.todo.dailyroutine.util.VoiceToTextManager
 import com.todo.dailyroutine.data.local.entity.LocalJournalEntry
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -74,16 +76,18 @@ class OmniViewModel(
             // Build Context
             val context = buildSystemContext()
             
-            aiRepository.parseIntentWithContext(q, context, config).onSuccess { intent ->
+            val result = aiRepository.parseIntentWithContext(q, context, config)
+            if (result.isSuccess) {
+                val intent = result.getOrThrow()
                 handleParsedIntent(intent)
                 _uiState.value = _uiState.value.copy(
                     isProcessing = false,
                     lastResult = "Jarvis: ${intent.type} verified.",
                     query = ""
                 )
-                kotlinx.coroutines.delay(1000)
+                delay(1000)
                 close()
-            }.onFailure {
+            } else {
                 _uiState.value = _uiState.value.copy(isProcessing = false, lastResult = "Signal interference. Try again.")
             }
         }

@@ -26,13 +26,13 @@ class SelfLearningEngine(
             if (m1.id in processedIds) continue
             
             val similarGroup = mutableListOf(m1)
-            val e1 = vectorMemoryManager.vectorEngine.jsonToFloatArray(m1.embedding)
+            val e1 = vectorMemoryManager.vectorEngine.byteArrayToFloatArray(m1.embedding)
             
             for (j in i + 1 until memories.size) {
                 val m2 = memories[j]
                 if (m2.id in processedIds) continue
                 
-                val e2 = vectorMemoryManager.vectorEngine.jsonToFloatArray(m2.embedding)
+                val e2 = vectorMemoryManager.vectorEngine.byteArrayToFloatArray(m2.embedding)
                 val similarity = vectorMemoryManager.vectorEngine.calculateCosineSimilarity(e1, e2)
                 
                 if (similarity > 0.65f) {
@@ -68,7 +68,7 @@ class SelfLearningEngine(
             vectorMemoryManager.storeMemory(
                 userId = userId,
                 text = mergedContent,
-                type = group.first().type,
+                type = group[0].type,
                 importance = group.maxOf { it.importance }
             )
         }
@@ -128,7 +128,7 @@ class SelfLearningEngine(
             val isDuplicate = existingInsights.any { 
                 vectorMemoryManager.vectorEngine.calculateCosineSimilarity(
                     vectorMemoryManager.vectorEngine.generateEmbedding(insight),
-                    vectorMemoryManager.vectorEngine.jsonToFloatArray(it.embedding)
+                    vectorMemoryManager.vectorEngine.byteArrayToFloatArray(it.embedding)
                 ) > 0.85f
             }
             

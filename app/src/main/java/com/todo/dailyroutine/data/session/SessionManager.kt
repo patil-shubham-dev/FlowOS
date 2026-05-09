@@ -15,19 +15,19 @@ class SessionManager(private val context: Context) {
     }
 
     fun getUserId(): String? {
-        return prefs.getString("user_id", null)
+        return "user"
     }
 
     fun getToken(): String? {
-        return prefs.getString("auth_token", null)
+        return "local_token"
     }
 
     fun getEmail(): String? {
-        return prefs.getString("email", null)
+        return "local@flowos.ai"
     }
 
     fun clearSession() {
-        prefs.edit().clear().apply()
+        // No-op for local-only mode
     }
 
     fun setAppLockEnabled(enabled: Boolean) {
@@ -36,10 +36,10 @@ class SessionManager(private val context: Context) {
 
     fun isAppLockEnabled(): Boolean = prefs.getBoolean("app_lock_enabled", false)
 
-    fun isLoggedIn(): Boolean = getUserId() != null && getToken() != null
+    fun isLoggedIn(): Boolean = true
     
     // Compatibility aliases
-    fun userId(): String = getUserId().orEmpty()
-    fun token(): String = getToken().orEmpty()
-    fun email(): String = getEmail().orEmpty()
+    fun userId(): String = "user"
+    fun token(): String = "local_token"
+    fun email(): String = "local@flowos.ai"
 }

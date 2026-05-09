@@ -109,13 +109,13 @@ fun DashboardScreen(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        MetricCard(
+                        FlowStatCard(
                             label = "Sync",
                             value = "${state.stats.progressPercent}%",
                             modifier = Modifier.weight(1f),
                             color = SuccessGreen
                         )
-                        MetricCard(
+                        FlowStatCard(
                             label = "Flow",
                             value = "${state.tasks.count { it.completed }}/${state.tasks.size}",
                             modifier = Modifier.weight(1f),

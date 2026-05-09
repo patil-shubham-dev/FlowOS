@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.fragment.app.FragmentActivity
 import com.todo.dailyroutine.util.BiometricHelper
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
 import androidx.compose.material.icons.Icons
@@ -12,6 +13,7 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Timeline
 import androidx.compose.material.icons.filled.HistoryEdu
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.material3.Icon
@@ -19,6 +21,7 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -37,7 +40,6 @@ import com.todo.dailyroutine.ui.components.*
 import com.todo.dailyroutine.ui.theme.*
 
 sealed class Screen(val route: String, val label: String) {
-    data object Auth : Screen("auth", "Auth")
     data object Home : Screen("home", "Home")
     data object Flow : Screen("flow", "Flow")
     data object Ai : Screen("ai", "AI")
@@ -64,9 +66,6 @@ fun AppNavHost() {
     val app = context.applicationContext as com.todo.dailyroutine.DailyRoutineApp
     val container = app.container
 
-    val authViewModel: AuthViewModel = viewModel(
-        factory = AuthViewModelFactory(container.authRepository)
-    )
     val homeViewModel: HomeViewModel = viewModel(
         factory = HomeViewModelFactory(
             container.taskRepository,
@@ -95,8 +94,7 @@ fun AppNavHost() {
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
-    val showBottomBar = currentDestination?.route != Screen.Auth.route && 
-                       currentDestination?.route != Screen.Onboarding.route && 
+    val showBottomBar = currentDestination?.route != Screen.Onboarding.route && 
                        currentDestination?.route != Screen.AiConfig.route &&
                        currentDestination?.route != Screen.DeepFlow.route &&
                        currentDestination?.route != Screen.Search.route
@@ -104,21 +102,11 @@ fun AppNavHost() {
     Box(modifier = Modifier.fillMaxSize()) {
         NavHost(
             navController = navController,
-            startDestination = Screen.Auth.route,
+            startDestination = Screen.Home.route,
             modifier = Modifier.fillMaxSize(),
             enterTransition = { fadeIn(tween(400)) + scaleIn(initialScale = 0.95f, animationSpec = tween(400)) },
             exitTransition = { fadeOut(tween(400)) + scaleOut(targetScale = 0.95f, animationSpec = tween(400)) }
         ) {
-            composable(Screen.Auth.route) {
-                AuthScreen(
-                    viewModel = authViewModel,
-                    onLoggedIn = {
-                        navController.navigate(Screen.Onboarding.route) {
-                            popUpTo(Screen.Auth.route) { inclusive = true }
-                        }
-                    }
-                )
-            }
             composable(Screen.Onboarding.route) {
                 OracleInterviewScreen(
                     onFinished = {
@@ -143,17 +131,11 @@ fun AppNavHost() {
                 AiScreen(aiViewModel)
             }
             composable(Screen.Journal.route) {
-                JournalScreen(journalViewModel, authViewModel)
+                JournalScreen(journalViewModel)
             }
             composable(Screen.Profile.route) {
                 ProfileScreen(
-                    authViewModel = authViewModel,
                     homeViewModel = homeViewModel,
-                    onSignedOut = {
-                        navController.navigate(Screen.Auth.route) {
-                            popUpTo(0) { inclusive = true }
-                        }
-                    },
                     onNavigateToAiConfig = {
                         navController.navigate(Screen.AiConfig.route)
                     }

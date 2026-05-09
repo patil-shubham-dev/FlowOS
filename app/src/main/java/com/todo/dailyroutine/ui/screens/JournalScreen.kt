@@ -6,12 +6,12 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.dp
@@ -26,7 +26,7 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun JournalScreen(viewModel: JournalViewModel, authViewModel: AuthViewModel) {
+fun JournalScreen(viewModel: JournalViewModel) {
     val entries by viewModel.entries.collectAsState()
     val isEnhancing by viewModel.isEnhancing.collectAsState()
     val streak by viewModel.streak.collectAsState()
@@ -219,13 +219,13 @@ fun JournalScreen(viewModel: JournalViewModel, authViewModel: AuthViewModel) {
 
         item { Spacer(Modifier.height(120.dp)) }
     }
+        }
 
     if (showAiMenu) {
         ModalBottomSheet(
             onDismissRequest = { showAiMenu = false },
             sheetState = sheetState,
-            containerColor = SurfaceCard,
-            dragHandleColor = Color.White.copy(alpha = 0.2f)
+            containerColor = SurfaceCard
         ) {
             Column(
                 modifier = Modifier

@@ -21,12 +21,9 @@ import com.todo.dailyroutine.ui.theme.*
 
 @Composable
 fun ProfileScreen(
-    authViewModel: AuthViewModel, 
     homeViewModel: HomeViewModel,
-    onSignedOut: () -> Unit,
     onNavigateToAiConfig: () -> Unit
 ) {
-    val state by authViewModel.uiState.collectAsState()
     val homeState by homeViewModel.uiState.collectAsState()
     var showAppLockDialog by remember { mutableStateOf(false) }
     
@@ -41,11 +38,8 @@ fun ProfileScreen(
     }
 
     if (showAppLockDialog) {
-        AppLockDialog(
-            enabled = state.isAppLockEnabled,
-            onToggle = { authViewModel.toggleAppLock(it) },
-            onDismiss = { showAppLockDialog = false }
-        )
+        // App Lock toggle disabled for now or move to SessionManager
+        showAppLockDialog = false
     }
     
     DashboardScaffold(title = "System") {
@@ -81,7 +75,7 @@ fun ProfileScreen(
                     }
                     
                     Spacer(Modifier.height(16.dp))
-                    Text(state.userEmail ?: "Flow User", style = Typography.headlineMedium, color = Color.White)
+                    Text("Flow User", style = Typography.headlineMedium, color = Color.White)
                     
                     Spacer(Modifier.height(8.dp))
                     
@@ -130,7 +124,7 @@ fun ProfileScreen(
                 ProfileItem(
                     Icons.Default.Security,
                     "App Lock",
-                    if (state.isAppLockEnabled) "Enabled" else "Disabled",
+                    "Disabled",
                     onClick = { showAppLockDialog = true }
                 )
             }
@@ -160,15 +154,12 @@ fun ProfileScreen(
         }
 
         item {
-            ProfileSection(title = "Protocol Termination") {
+            ProfileSection(title = "Protocol Settings") {
                 ProfileItem(
-                    icon = Icons.AutoMirrored.Filled.Logout,
-                    title = "Terminate Session",
-                    subtitle = "Safe exit to standby",
-                    onClick = {
-                        authViewModel.signOut()
-                        onSignedOut()
-                    }
+                    icon = Icons.Default.Info,
+                    title = "Version",
+                    subtitle = "FlowOS v2.0-Alpha (Local-First)",
+                    onClick = { }
                 )
             }
         }

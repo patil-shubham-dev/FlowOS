@@ -35,8 +35,8 @@ data class HomeUiState(
 )
 
 class HomeViewModel(
-    private val taskRepository: TaskRepository,
-    private val habitRepository: HabitRepository,
+    val taskRepository: TaskRepository,
+    val habitRepository: HabitRepository,
     private val aiRepository: AiRepository,
     private val aiScheduler: AiScheduler
 ) : ViewModel() {
@@ -123,7 +123,7 @@ class HomeViewModel(
         )
         
         if (conflicts.isNotEmpty()) {
-            _uiState.value = _uiState.value.copy(oracleInsight = "CRITICAL: ${conflicts.first().message}")
+            _uiState.value = _uiState.value.copy(oracleInsight = "CRITICAL: ${conflicts[0].message}")
             return
         }
 

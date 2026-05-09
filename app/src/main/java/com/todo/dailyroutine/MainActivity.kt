@@ -54,7 +54,7 @@ class MainActivity : FragmentActivity() {
         val app = application as DailyRoutineApp
         val sessionManager = app.container.sessionManager
         
-        if (sessionManager.isAppLockEnabled() && sessionManager.isLoggedIn()) {
+        if (sessionManager.isAppLockEnabled()) {
             val lockManager = AppLockManager(this)
             lockManager.showAppLock(
                 onSuccess = { isUnlocked = true },

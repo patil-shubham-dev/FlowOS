@@ -79,6 +79,10 @@ class JournalViewModel(
         }
     }
 
+    fun enhanceEntry(content: String, onResult: (String) -> Unit) {
+        refineEntry(content, RefineStyle.PROFESSIONAL, onResult)
+    }
+
     fun summarizeEntry(content: String, onResult: (String) -> Unit) {
         viewModelScope.launch {
             _isEnhancing.value = true

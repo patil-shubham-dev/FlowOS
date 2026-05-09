@@ -127,7 +127,7 @@ class AiRepository(
         messages.add(mapOf("role" to "user", "content" to prompt))
 
         val body = mutableMapOf<String, Any>(
-            "model" to (config.model ?: getHardcodedModels(provider).first()),
+            "model" to (config.model ?: getHardcodedModels(provider)[0]),
             "messages" to messages
         )
 
@@ -208,7 +208,7 @@ class AiRepository(
         messages.add(mapOf("role" to "user", "content" to prompt))
 
         val body = mutableMapOf<String, Any>(
-            "model" to (config.model ?: getHardcodedModels(provider).first()),
+            "model" to (config.model ?: getHardcodedModels(provider)[0]),
             "messages" to messages,
             "stream" to true
         )
@@ -400,7 +400,7 @@ class AiRepository(
         }
     }
 
-    private fun formatSystemContext(context: SystemContext): String {
+    fun formatSystemContext(context: SystemContext): String {
         return """
             SYSTEM CONTEXT (DEEP MEMORY):
             - Current Time: ${context.currentTime}

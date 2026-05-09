@@ -15,6 +15,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.font.FontStyle
 import com.mohamedrejeb.richeditor.model.RichTextState
 import com.todo.dailyroutine.ui.theme.AccentPrimary
 import com.todo.dailyroutine.ui.theme.SurfaceCard
@@ -44,13 +46,13 @@ fun JournalEditorToolbar(
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 ToolbarIcon(
                     icon = Icons.Default.FormatBold,
-                    isSelected = state.isBold,
-                    onClick = { state.toggleSpanStyle(androidx.compose.ui.text.SpanStyle(fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)) }
+                    isSelected = false, // state.isBold,
+                    onClick = { state.toggleSpanStyle(androidx.compose.ui.text.SpanStyle(fontWeight = FontWeight.Bold)) }
                 )
                 ToolbarIcon(
                     icon = Icons.Default.FormatItalic,
-                    isSelected = state.isItalic,
-                    onClick = { state.toggleSpanStyle(androidx.compose.ui.text.SpanStyle(fontStyle = androidx.compose.ui.text.font.FontStyle.Italic)) }
+                    isSelected = false, // state.isItalic,
+                    onClick = { state.toggleSpanStyle(androidx.compose.ui.text.SpanStyle(fontStyle = FontStyle.Italic)) }
                 )
                 ToolbarIcon(
                     icon = Icons.Default.FormatListBulleted,

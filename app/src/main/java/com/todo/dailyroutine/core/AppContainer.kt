@@ -22,9 +22,6 @@ class AppContainer(private val context: Context) {
     val sessionManager by lazy { SessionManager(context) }
     val db by lazy { AppDatabase.getDatabase(context) }
 
-    val authRepository by lazy { 
-        AuthRepository(sessionManager) 
-    }
 
     val taskRepository by lazy { 
         TaskRepository(db.taskDao(), sessionManager) 

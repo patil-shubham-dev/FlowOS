@@ -7,16 +7,6 @@ data class UniversalAiProvider(
     val providerName: String
 )
 
-data class AiToolCall(
-    val id: String,
-    val type: String,
-    val function: AiFunctionCall
-)
-
-data class AiFunctionCall(
-    val name: String,
-    val arguments: String
-)
 
 data class ToolExecutionResult(
     val toolCallId: String,
