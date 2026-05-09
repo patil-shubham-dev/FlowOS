@@ -27,9 +27,6 @@ class AiRepository(
 ) {
     private val gson = Gson()
 
-    /**
-     * Detects the provider based on the API key format.
-     */
     fun detectProvider(apiKey: String): String {
         return when {
             apiKey.startsWith("sk-ant-") -> "Anthropic"
@@ -37,7 +34,7 @@ class AiRepository(
             apiKey.startsWith("gsk_") -> "Groq"
             apiKey.startsWith("nvapi-") -> "Nvidia"
             apiKey.startsWith("AIza") -> "Google"
-            else -> "OpenAI" // Default fallback
+            else -> "Custom" // Default to Custom/Universal
         }
     }
 
@@ -45,7 +42,7 @@ class AiRepository(
      * Fetches available models for a given provider.
      */
     suspend fun fetchModels(config: UserApiConfig): List<String> = withContext(Dispatchers.IO) {
-        val provider = detectProvider(config.apiKey).lowercase()
+        val provider = if (config.providerName != "Custom") config.providerName.lowercase() else detectProvider(config.apiKey).lowercase()
         val headers = mutableMapOf<String, String>()
         
         when (provider) {
@@ -109,7 +106,7 @@ class AiRepository(
         jsonMode: Boolean = false
     ): Result<String> = runCatching {
         val headers = mutableMapOf<String, String>()
-        val provider = detectProvider(config.apiKey).lowercase()
+        val provider = if (config.providerName != "Custom") config.providerName.lowercase() else detectProvider(config.apiKey).lowercase()
         
         when (provider) {
             "anthropic" -> {
@@ -191,7 +188,7 @@ class AiRepository(
         systemPrompt: String? = null
     ): Flow<String> = flow {
         val config = activeConfig ?: return@flow
-        val provider = detectProvider(config.apiKey).lowercase()
+        val provider = if (config.providerName != "Custom") config.providerName.lowercase() else detectProvider(config.apiKey).lowercase()
         val headers = mutableMapOf<String, String>()
         
         when (provider) {

@@ -26,7 +26,7 @@ fun AiConfigScreen(viewModel: AiViewModel, onBack: () -> Unit) {
     val state by viewModel.uiState.collectAsState()
     var selectedProvider by remember { mutableStateOf("OpenAI") }
     
-    val providers = listOf("OpenAI", "Anthropic", "Google", "Nvidia", "Groq")
+    val providers = listOf("OpenAI", "Anthropic", "Google", "Nvidia", "Groq", "Custom")
     
     DashboardScaffold(
         title = "AI Protocol",
@@ -107,6 +107,7 @@ fun UniversalSetupCard(
                             "Google" -> Icons.Default.AutoAwesome
                             "Nvidia" -> Icons.Default.Memory
                             "Groq" -> Icons.Default.Speed
+                            "Custom" -> Icons.Default.SettingsInputComponent
                             else -> Icons.Default.Link
                         },
                         contentDescription = null,
@@ -149,10 +150,10 @@ fun UniversalSetupCard(
             Spacer(Modifier.height(16.dp))
 
             ConfigField(
-                label = "Endpoint Relay (Optional)",
+                label = "Endpoint Relay / Base URL",
                 value = config?.baseUrl ?: "",
                 onValueChange = onBaseUrlChange,
-                placeholder = "Default Proxy active",
+                placeholder = if (selectedProvider == "Custom") "https://api.your-provider.com/v1" else "Default Proxy active",
                 icon = Icons.Default.Hub
             )
 

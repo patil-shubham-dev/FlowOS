@@ -30,6 +30,7 @@ The **Oracle** is the heart of FlowOS. It doesn't wait for you to check your tas
 ### 2. **BYOK (Bring Your Own Key) Orchestration**
 Total autonomy through model flexibility. FlowOS acts as a universal bridge to the world's most powerful LLMs.
 *   **Multi-Provider Support**: Seamlessly switch between OpenAI (GPT-4o), Anthropic (Claude 3.5), Google (Gemini), Nvidia (NIM), and Groq.
+*   **Universal API Protocol**: Support for any OpenAI-compatible custom endpoint (Ollama, LM Studio, vLLM, etc.) via the "Custom" provider.
 *   **Local Inference Ready**: Built with an architecture that prioritizes local vector embeddings and future on-device SLM support.
 
 ### 3. **Omni-Input Command Center**
