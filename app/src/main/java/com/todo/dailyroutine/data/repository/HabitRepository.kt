@@ -16,6 +16,8 @@ class HabitRepository(
 ) {
     val habits: Flow<List<HabitItem>> = habitDao.getAllHabits().map { list -> list.map { it.toModel() } }
 
+    suspend fun getAllHabitsSync(): List<HabitItem> = habitDao.getAllHabits().first().map { it.toModel() }
+
     suspend fun fetchHabits(): Result<Unit> = Result.success(Unit) // Local-only: no fetch needed
 
 

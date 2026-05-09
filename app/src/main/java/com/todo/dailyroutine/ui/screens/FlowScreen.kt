@@ -37,20 +37,28 @@ fun FlowScreen(viewModel: HomeViewModel) {
         item {
             Column(verticalArrangement = Arrangement.spacedBy(24.dp)) {
                 FlowSection(title = "Rituals") {
-                    state.habits.forEach { habit ->
-                        FlowHabitItem(
-                            habit = habit,
-                            onToggle = { viewModel.toggleHabit(habit) }
-                        )
+                    if (state.loading) {
+                        repeat(3) { SkeletonCard(height = 80.dp) }
+                    } else {
+                        state.habits.forEach { habit ->
+                            FlowHabitItem(
+                                habit = habit,
+                                onToggle = { viewModel.toggleHabit(habit) }
+                            )
+                        }
                     }
                 }
                 
                 FlowSection(title = "Objectives") {
-                    state.tasks.forEach { task ->
-                        FlowTaskItem(
-                            task = task,
-                            onToggle = { viewModel.toggleTask(task) }
-                        )
+                    if (state.loading) {
+                        repeat(4) { SkeletonCard(height = 80.dp) }
+                    } else {
+                        state.tasks.forEach { task ->
+                            FlowTaskItem(
+                                task = task,
+                                onToggle = { viewModel.toggleTask(task) }
+                            )
+                        }
                     }
                 }
             }

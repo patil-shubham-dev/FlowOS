@@ -12,6 +12,7 @@ import com.todo.dailyroutine.domain.vector.VectorEngine
 import com.todo.dailyroutine.domain.vector.VectorMemoryManager
 import com.todo.dailyroutine.domain.vector.MemoryPipeline
 import com.todo.dailyroutine.util.WhisperTranscriptionManager
+import com.todo.dailyroutine.util.VoiceToTextManager
 
 class AppContainer(private val context: Context) {
     init {
@@ -51,14 +52,14 @@ class AppContainer(private val context: Context) {
 
     val vectorEngine by lazy { VectorEngine(context) }
     val vectorMemoryManager by lazy { VectorMemoryManager(db.memoryDao(), vectorEngine) }
-    val memoryPipeline by lazy { MemoryPipeline(aiRepository, vectorMemoryManager) }
+    val memoryPipeline by lazy { MemoryPipeline(aiRepository, aiConfigRepository, vectorMemoryManager) }
 
     val journalRepository by lazy {
         JournalRepository(db.journalDao(), db.journalStreakDao(), memoryPipeline)
     }
 
     val journalViewModelFactory by lazy {
-        JournalViewModelFactory(journalRepository, whisperTranscriptionManager, aiRepository)
+        JournalViewModelFactory(journalRepository, taskRepository, whisperTranscriptionManager, aiRepository)
     }
 
     val oracleToolExecutor by lazy {
@@ -75,7 +76,31 @@ class AppContainer(private val context: Context) {
             db.messageDao(),
             db.summaryDao(),
             vectorMemoryManager,
-            memoryPipeline
+            memoryPipeline,
+            taskRepository,
+            habitRepository,
+            journalRepository,
+            flowScoreRepository
+        )
+    }
+
+    val searchViewModelFactory by lazy {
+        com.todo.dailyroutine.ui.viewmodel.SearchViewModelFactory(vectorMemoryManager)
+    }
+
+    val voiceToTextManager by lazy {
+        VoiceToTextManager(context)
+    }
+
+    val omniViewModelFactory by lazy {
+        com.todo.dailyroutine.ui.viewmodel.OmniViewModelFactory(
+            aiRepository,
+            taskRepository,
+            habitRepository,
+            aiConfigRepository,
+            journalRepository,
+            flowScoreRepository,
+            voiceToTextManager
         )
     }
 

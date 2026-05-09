@@ -5,6 +5,16 @@ data class AppUser(
     val email: String
 )
 
+data class JournalEntry(
+    val id: String,
+    val userId: String,
+    val content: String,
+    val rating: Int,
+    val aiInsight: String? = null,
+    val date: String,
+    val timestamp: Long
+)
+
 data class TaskItem(
     val id: String,
     val userId: String,
@@ -64,4 +74,34 @@ data class AiReminderPlan(
 data class AiRoutineResponse(
     val advice: String,
     val reminderPlan: AiReminderPlan?
+)
+
+data class ParsedIntent(
+    val type: String, // "task", "habit", "search"
+    val title: String? = null,
+    val category: String = "Other",
+    val timeBlock: String? = null,
+    val isRecurring: Boolean = false,
+    val searchQuery: String? = null
+)
+
+data class SystemContext(
+    val tasks: List<TaskItem>,
+    val habits: List<HabitItem>,
+    val journalEntries: List<JournalEntry>,
+    val flowScore: Int,
+    val userLevel: String,
+    val currentTime: String,
+    val recentMoods: List<String>
+)
+
+data class AiToolCall(
+    val id: String,
+    val type: String,
+    val function: AiFunctionCall
+)
+
+data class AiFunctionCall(
+    val name: String,
+    val arguments: String
 )

@@ -9,5 +9,6 @@ class DailyRoutineApp : Application() {
     override fun onCreate() {
         super.onCreate()
         container = AppContainer(this)
+        container.notificationScheduler.scheduleOracleDreaming()
     }
 }

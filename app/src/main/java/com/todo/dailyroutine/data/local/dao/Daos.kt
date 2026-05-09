@@ -142,6 +142,9 @@ interface FlowScoreDao {
 
     @Query("SELECT * FROM flow_scores WHERE userId = :userId ORDER BY date DESC LIMIT 7")
     fun getWeeklyTrend(userId: String): Flow<List<LocalFlowScore>>
+
+    @Query("SELECT * FROM flow_scores ORDER BY timestamp DESC LIMIT 1")
+    suspend fun getLatestScore(): LocalFlowScore?
 }
 
 @Dao

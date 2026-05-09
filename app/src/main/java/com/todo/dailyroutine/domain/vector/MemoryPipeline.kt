@@ -7,6 +7,7 @@ import org.json.JSONObject
 
 class MemoryPipeline(
     private val aiRepository: AiRepository,
+    private val aiConfigRepository: AiConfigRepository,
     private val vectorMemoryManager: VectorMemoryManager
 ) {
     
@@ -14,28 +15,31 @@ class MemoryPipeline(
      * Processes user input through AI classification and system validation.
      */
     suspend fun processAndStore(userId: String, input: String) = withContext(Dispatchers.IO) {
-        // 1. AI Classification
+        val config = aiConfigRepository.getActiveConfig() ?: return@withContext
+        
+        // 1. AI Classification with Structured Output
         val classificationPrompt = """
             Analyze the following user input and extract a structured memory insight.
             Input: "$input"
             
-            Return ONLY a JSON object with:
+            Rules:
+            - Store if it's a fact about the user, a preference, or a clear goal.
+            - Do not store casual conversation or greetings.
+            - Return ONLY a JSON object.
+            
+            JSON Structure:
             {
                 "text": "The core fact or preference to remember",
                 "type": "fact|preference|goal|context",
                 "importance": 0.1 to 1.0,
                 "shouldStore": true|false
             }
-            
-            Rules:
-            - Store if it's a fact about the user, a preference, or a clear goal.
-            - Do not store casual conversation or greetings.
         """.trimIndent()
         
-        val aiResponse = aiRepository.chat(classificationPrompt).getOrNull() ?: return@withContext
+        val aiResponse = aiRepository.chat(classificationPrompt, config, jsonMode = true).getOrNull() ?: return@withContext
         
         val classification = try {
-            val json = JSONObject(aiResponse.substringAfter("{").substringBeforeLast("}") + "}")
+            val json = JSONObject(aiResponse)
             MemoryInsight(
                 text = json.getString("text"),
                 type = json.getString("type"),
@@ -43,7 +47,19 @@ class MemoryPipeline(
                 shouldStore = json.getBoolean("shouldStore")
             )
         } catch (e: Exception) {
-            null
+            // Fallback: handle cases where LLM might still wrap in markdown or return invalid format
+            try {
+                val cleaned = aiResponse.substringAfter("{").substringBeforeLast("}") + "}"
+                val json = JSONObject(cleaned)
+                MemoryInsight(
+                    text = json.getString("text"),
+                    type = json.getString("type"),
+                    importance = json.getDouble("importance").toFloat(),
+                    shouldStore = json.getBoolean("shouldStore")
+                )
+            } catch (e2: Exception) {
+                null
+            }
         } ?: return@withContext
 
         // 2. System Validation (Hard Rules)

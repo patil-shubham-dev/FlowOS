@@ -30,6 +30,7 @@ data class HomeUiState(
     val nextBestAction: String = "Start with one small high-impact task now.",
     val oracleInsight: String? = null,
     val collapsedSections: Map<String, Boolean> = emptyMap(),
+    val celebrationMessage: String? = null,
     val error: String? = null
 )
 
@@ -85,6 +86,7 @@ class HomeViewModel(
     }
 
     fun refresh(forceRemote: Boolean = false) {
+        _uiState.value = _uiState.value.copy(loading = true)
         viewModelScope.launch {
             if (forceRemote) {
                 taskRepository.fetchTasks()
@@ -92,6 +94,10 @@ class HomeViewModel(
             }
             updateNextAction()
             updateOracleInsight()
+            
+            // Ensure shimmer is visible for at least 600ms for premium feel
+            kotlinx.coroutines.delay(600)
+            _uiState.value = _uiState.value.copy(loading = false)
         }
     }
 
@@ -176,7 +182,22 @@ class HomeViewModel(
 
     fun toggleTask(task: TaskItem) {
         viewModelScope.launch {
+            val wasCompleted = task.completed
             taskRepository.toggleTask(task)
+            
+            if (!wasCompleted) {
+                // Task was just marked as completed
+                val messages = listOf(
+                    "Protocol Advanced",
+                    "Flow Sustained",
+                    "Synapse firing",
+                    "Cycle Complete",
+                    "Efficiency +5%"
+                )
+                _uiState.value = _uiState.value.copy(celebrationMessage = messages.random())
+                kotlinx.coroutines.delay(2000)
+                _uiState.value = _uiState.value.copy(celebrationMessage = null)
+            }
         }
     }
 

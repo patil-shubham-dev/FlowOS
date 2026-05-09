@@ -1,6 +1,8 @@
 package com.todo.dailyroutine.ui.navigation
 
 import android.app.Application
+import androidx.fragment.app.FragmentActivity
+import com.todo.dailyroutine.util.BiometricHelper
 import androidx.compose.foundation.layout.*
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
@@ -42,6 +44,8 @@ sealed class Screen(val route: String, val label: String) {
     data object Journal : Screen("journal", "Journal")
     data object Profile : Screen("profile", "Profile")
     data object AiConfig : Screen("ai_config", "AI Config")
+    data object Search : Screen("search", "Search")
+    data object DeepFlow : Screen("deep_flow", "Deep Flow")
     data object Onboarding : Screen("onboarding", "Onboarding")
 }
 
@@ -85,9 +89,17 @@ fun AppNavHost() {
         factory = container.journalViewModelFactory
     )
 
+    val omniViewModel: OmniViewModel = viewModel(
+        factory = container.omniViewModelFactory
+    )
+
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
-    val showBottomBar = currentDestination?.route != Screen.Auth.route && currentDestination?.route != Screen.Onboarding.route && currentDestination?.route != Screen.AiConfig.route
+    val showBottomBar = currentDestination?.route != Screen.Auth.route && 
+                       currentDestination?.route != Screen.Onboarding.route && 
+                       currentDestination?.route != Screen.AiConfig.route &&
+                       currentDestination?.route != Screen.DeepFlow.route &&
+                       currentDestination?.route != Screen.Search.route
 
     Box(modifier = Modifier.fillMaxSize()) {
         NavHost(
@@ -117,7 +129,12 @@ fun AppNavHost() {
                 )
             }
             composable(Screen.Home.route) {
-                DashboardScreen(homeViewModel, aiViewModel)
+                DashboardScreen(
+                    homeViewModel = homeViewModel,
+                    aiViewModel = aiViewModel,
+                    onNavigateToSearch = { navController.navigate(Screen.Search.route) },
+                    onNavigateToDeepFlow = { navController.navigate(Screen.DeepFlow.route) }
+                )
             }
             composable(Screen.Flow.route) {
                 FlowScreen(homeViewModel)
@@ -131,6 +148,7 @@ fun AppNavHost() {
             composable(Screen.Profile.route) {
                 ProfileScreen(
                     authViewModel = authViewModel,
+                    homeViewModel = homeViewModel,
                     onSignedOut = {
                         navController.navigate(Screen.Auth.route) {
                             popUpTo(0) { inclusive = true }
@@ -147,6 +165,20 @@ fun AppNavHost() {
                     onBack = { navController.popBackStack() }
                 )
             }
+            composable(Screen.Search.route) {
+                val searchViewModel: SearchViewModel = viewModel(
+                    factory = container.searchViewModelFactory
+                )
+                SearchScreen(
+                    viewModel = searchViewModel,
+                    onBack = { navController.popBackStack() }
+                )
+            }
+            composable(Screen.DeepFlow.route) {
+                DeepFlowScreen(
+                    onBack = { navController.popBackStack() }
+                )
+            }
         }
 
         if (showBottomBar) {
@@ -154,12 +186,39 @@ fun AppNavHost() {
                 items = navItems,
                 currentRoute = currentDestination?.route,
                 onNavigate = { route ->
-                    navController.navigate(route) {
-                        popUpTo(navController.graph.findStartDestination().id) {
-                            saveState = true
+                    if (route == Screen.Journal.route) {
+                        val activity = context as? FragmentActivity
+                        if (activity != null) {
+                            BiometricHelper.showPrompt(
+                                activity = activity,
+                                onSuccess = {
+                                    navController.navigate(route) {
+                                        popUpTo(navController.graph.findStartDestination().id) {
+                                            saveState = true
+                                        }
+                                        launchSingleTop = true
+                                        restoreState = true
+                                    }
+                                },
+                                onError = { /* User cancelled or failed */ }
+                            )
+                        } else {
+                            navController.navigate(route) {
+                                popUpTo(navController.graph.findStartDestination().id) {
+                                    saveState = true
+                                }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
                         }
-                        launchSingleTop = true
-                        restoreState = true
+                    } else {
+                        navController.navigate(route) {
+                            popUpTo(navController.graph.findStartDestination().id) {
+                                saveState = true
+                            }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
                     }
                 },
                 modifier = Modifier
@@ -167,5 +226,22 @@ fun AppNavHost() {
                     .padding(bottom = 32.dp)
             )
         }
+
+        // Global Omni-Input FAB
+        if (showBottomBar) {
+            FloatingActionButton(
+                onClick = { omniViewModel.open() },
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(end = 24.dp, bottom = 100.dp),
+                containerColor = AccentPrimary,
+                shape = CircleShape
+            ) {
+                Icon(Icons.Default.Add, contentDescription = null, tint = Color.White)
+            }
+        }
+
+        // Global Overlay
+        OmniInputOverlay(omniViewModel)
     }
 }

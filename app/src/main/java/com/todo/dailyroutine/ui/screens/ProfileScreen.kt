@@ -10,8 +10,10 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.todo.dailyroutine.ui.viewmodel.*
 import com.todo.dailyroutine.ui.components.*
@@ -20,12 +22,24 @@ import com.todo.dailyroutine.ui.theme.*
 @Composable
 fun ProfileScreen(
     authViewModel: AuthViewModel, 
+    homeViewModel: HomeViewModel,
     onSignedOut: () -> Unit,
     onNavigateToAiConfig: () -> Unit
 ) {
     val state by authViewModel.uiState.collectAsState()
+    val homeState by homeViewModel.uiState.collectAsState()
     var showAppLockDialog by remember { mutableStateOf(false) }
     
+    val currentScore = homeState.stats.progressPercent
+    val rankTitle = when {
+        currentScore >= 90 -> "Arch-Oracle"
+        currentScore >= 80 -> "Oracle Link"
+        currentScore >= 60 -> "Neural Weaver"
+        currentScore >= 40 -> "Flow Adept"
+        currentScore >= 20 -> "Novice Sync"
+        else -> "Protocol Initializing"
+    }
+
     if (showAppLockDialog) {
         AppLockDialog(
             enabled = state.isAppLockEnabled,
@@ -68,7 +82,22 @@ fun ProfileScreen(
                     
                     Spacer(Modifier.height(16.dp))
                     Text(state.userEmail ?: "Flow User", style = Typography.headlineMedium, color = Color.White)
-                    Text("Protocol: Active", style = Typography.labelLarge, color = Color(0xFF30D158))
+                    
+                    Spacer(Modifier.height(8.dp))
+                    
+                    Surface(
+                        color = AccentPrimary.copy(alpha = 0.1f),
+                        shape = RoundedCornerShape(12.dp),
+                        border = BorderStroke(1.dp, AccentPrimary.copy(alpha = 0.2f))
+                    ) {
+                        Text(
+                            rankTitle,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                            style = Typography.labelLarge,
+                            color = AccentPrimary,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
             }
         }
@@ -108,19 +137,25 @@ fun ProfileScreen(
         }
 
         item {
-            ProfileSection(title = "Data & Privacy") {
-                ProfileItem(
-                    Icons.Default.Storage,
-                    "Local Storage",
-                    "All data stored locally",
-                    onClick = { /* Storage info */ }
+            ProfileSection(title = "Neural Mastery") {
+                Row(modifier = Modifier.padding(16.dp).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Column {
+                        Text("Current Flow", style = Typography.labelSmall, color = TextSecondary)
+                        Text("${currentScore}%", style = Typography.titleLarge, color = Color.White, fontWeight = FontWeight.Bold)
+                    }
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text("Level", style = Typography.labelSmall, color = TextSecondary)
+                        Text((currentScore / 10 + 1).toString(), style = Typography.titleLarge, color = Color.White, fontWeight = FontWeight.Bold)
+                    }
+                }
+                
+                LinearProgressIndicator(
+                    progress = (currentScore % 10) / 10f,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).height(4.dp).clip(CircleShape),
+                    color = AccentPrimary,
+                    trackColor = Color.White.copy(alpha = 0.05f)
                 )
-                ProfileItem(
-                    Icons.Default.DeleteOutline,
-                    "Clear Cache",
-                    "Remove temporary data",
-                    onClick = { /* Clear cache */ }
-                )
+                Spacer(Modifier.height(16.dp))
             }
         }
 

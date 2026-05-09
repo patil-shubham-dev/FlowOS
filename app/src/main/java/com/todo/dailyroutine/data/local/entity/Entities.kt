@@ -73,7 +73,7 @@ data class LocalMemory(
     @PrimaryKey val id: String,
     val userId: String,
     val text: String,
-    val embedding: String, // Stored as JSON array of floats
+    val embedding: ByteArray, // Stored as BLOB (serialized float array)
     val type: String = "fact", // "preference", "fact", "goal", "task", "context"
     val importance: Float = 1.0f,
     val lastUsed: Long = System.currentTimeMillis(),

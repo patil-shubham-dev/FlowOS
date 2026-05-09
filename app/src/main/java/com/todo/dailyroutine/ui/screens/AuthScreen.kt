@@ -45,9 +45,9 @@ fun AuthScreen(
         Canvas(modifier = Modifier.fillMaxSize()) {
             drawCircle(
                 brush = Brush.radialGradient(
-                    colors = listOf(AccentPrimary.copy(alpha = 0.08f), Color.Transparent),
-                    center = Offset(size.width * 0.1f, size.height * 0.2f),
-                    radius = size.maxDimension
+                    colors = listOf(AccentPrimary.copy(alpha = 0.15f), Color.Transparent),
+                    center = Offset(size.width * 0.5f, size.height * 0.2f),
+                    radius = size.maxDimension * 0.7f
                 )
             )
         }
@@ -62,17 +62,10 @@ fun AuthScreen(
         ) {
             Box(
                 modifier = Modifier
-                    .size(88.dp)
-                    .background(Color.White.copy(alpha = 0.03f), CircleShape)
-                    .border(1.dp, Color.White.copy(alpha = 0.05f), CircleShape),
+                    .size(120.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    imageVector = Icons.Default.Cyclone,
-                    contentDescription = null,
-                    modifier = Modifier.size(44.dp),
-                    tint = AccentPrimary
-                )
+                FlowLogo(modifier = Modifier.fillMaxSize())
             }
             
             Spacer(Modifier.height(32.dp))

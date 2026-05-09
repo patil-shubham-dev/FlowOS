@@ -7,6 +7,8 @@ import ai.onnxruntime.OrtSession
 import org.json.JSONArray
 import java.util.*
 import kotlin.math.sqrt
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
 
 class VectorEngine(private val context: Context) {
     
@@ -103,6 +105,25 @@ class VectorEngine(private val context: Context) {
         val array = FloatArray(jsonArray.length())
         for (i in 0 until jsonArray.length()) {
             array[i] = jsonArray.getDouble(i).toFloat()
+        }
+        return array
+    }
+
+    fun floatArrayToByteArray(array: FloatArray): ByteArray {
+        val buffer = ByteBuffer.allocate(array.size * 4)
+        buffer.order(ByteOrder.LITTLE_ENDIAN)
+        for (value in array) {
+            buffer.putFloat(value)
+        }
+        return buffer.array()
+    }
+
+    fun byteArrayToFloatArray(bytes: ByteArray): FloatArray {
+        val buffer = ByteBuffer.wrap(bytes)
+        buffer.order(ByteOrder.LITTLE_ENDIAN)
+        val array = FloatArray(bytes.size / 4)
+        for (i in array.indices) {
+            array[i] = buffer.float
         }
         return array
     }

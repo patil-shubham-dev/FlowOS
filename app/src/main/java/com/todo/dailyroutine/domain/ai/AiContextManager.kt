@@ -9,23 +9,45 @@ import com.todo.dailyroutine.domain.vector.VectorMemoryManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import com.todo.dailyroutine.domain.vector.MemoryPipeline
+import com.todo.dailyroutine.data.repository.*
+import kotlinx.coroutines.flow.first
 import org.json.JSONObject
+import java.time.LocalDate
 
 class AiContextManager(
     private val aiRepository: AiRepository,
     private val messageDao: MessageDao,
     private val summaryDao: SummaryDao,
     private val vectorMemoryManager: VectorMemoryManager,
-    private val memoryPipeline: MemoryPipeline
+    private val memoryPipeline: MemoryPipeline,
+    private val taskRepository: TaskRepository,
+    private val habitRepository: HabitRepository,
+    private val journalRepository: JournalRepository,
+    private val flowScoreRepository: FlowScoreRepository
 ) {
     
     suspend fun getOptimizedContext(userId: String, currentQuery: String): List<Map<String, String>> = withContext(Dispatchers.IO) {
         val context = mutableListOf<Map<String, String>>()
 
         // 1. System Prompt
-        context.add(mapOf("role" to "system", "content" to "You are FlowOS AI, a production-grade intelligent assistant. Be concise, actionable, and professional."))
+        context.add(mapOf("role" to "system", "content" to "You are FlowOS AI, a production-grade intelligent assistant. You have full visibility into the user's tasks, habits, and journals. Be concise, actionable, and professional."))
 
-        // 2. Vector-Based Memory Retrieval (Top 5)
+        // 2. Operational State (Live Snapshot)
+        val activeTasks = taskRepository.tasks.first().filter { !it.completed }.take(5)
+        val rituals = habitRepository.habits.first()
+        val latestJournal = journalRepository.getAllEntries().first().firstOrNull()
+        val score = flowScoreRepository.getScoreForDate(userId, LocalDate.now().toString())
+
+        val stateText = """
+            Live Operational State:
+            - Active Objectives: ${activeTasks.joinToString { it.title }}
+            - Daily Rituals: ${rituals.joinToString { "${it.name} (${if (it.completedToday) "Sync" else "Pending"})" }}
+            - Latest Reflection: ${latestJournal?.content?.take(100)}... (Vibe: ${latestJournal?.rating}/10)
+            - Current Flow Score: ${score?.score ?: "Analyzing..."} (${score?.tasksCompleted ?: 0}/${score?.totalTasks ?: 0} items)
+        """.trimIndent()
+        context.add(mapOf("role" to "system", "content" to stateText))
+
+        // 3. Vector-Based Memory Retrieval (Top 5)
         val relevantMemories = vectorMemoryManager.retrieveRelevantMemories(userId, currentQuery)
         if (relevantMemories.isNotEmpty()) {
             val memoryText = relevantMemories.joinToString("\n") { "- [${it.type}]: ${it.text}" }

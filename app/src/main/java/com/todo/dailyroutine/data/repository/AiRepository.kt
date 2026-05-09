@@ -15,6 +15,11 @@ import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.asRequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.callbackFlow
+import java.io.BufferedReader
+import java.io.InputStreamReader
 
 class AiRepository(
     private val aiApi: AiStudioApi,
@@ -100,7 +105,8 @@ class AiRepository(
         config: UserApiConfig,
         prompt: String,
         systemPrompt: String? = null,
-        tools: List<Map<String, Any>>? = null
+        tools: List<Map<String, Any>>? = null,
+        jsonMode: Boolean = false
     ): Result<String> = runCatching {
         val headers = mutableMapOf<String, String>()
         val provider = detectProvider(config.apiKey).lowercase()
@@ -133,6 +139,10 @@ class AiRepository(
             body["tool_choice"] = "auto"
         }
 
+        if (jsonMode && provider != "anthropic") {
+            body["response_format"] = mapOf("type" to "json_object")
+        }
+
         val baseUrl = if (config.baseUrl.isNotBlank()) config.baseUrl else when(provider) {
             "openai" -> "https://api.openai.com/v1/chat/completions"
             "anthropic" -> "https://api.anthropic.com/v1/messages"
@@ -153,10 +163,11 @@ class AiRepository(
         prompt: String, 
         activeConfig: UserApiConfig? = null, 
         systemPrompt: String? = null,
-        tools: List<Map<String, Any>>? = null
+        tools: List<Map<String, Any>>? = null,
+        jsonMode: Boolean = false
     ): Result<String> = runCatching {
         if (activeConfig != null) {
-            generateWithDynamicConfig(activeConfig, prompt, systemPrompt, tools).getOrThrow()
+            generateWithDynamicConfig(activeConfig, prompt, systemPrompt, tools, jsonMode).getOrThrow()
         } else {
             // Use Google Gemini as default if no config provided
             val response = aiApi.generatePlan(
@@ -168,6 +179,89 @@ class AiRepository(
                 )
             )
             response.candidates?.firstOrNull()?.content?.parts?.firstOrNull()?.text.orEmpty()
+        }
+    }
+
+    /**
+     * Streams AI responses in real-time.
+     */
+    fun chatStream(
+        prompt: String,
+        activeConfig: UserApiConfig? = null,
+        systemPrompt: String? = null
+    ): Flow<String> = flow {
+        val config = activeConfig ?: return@flow
+        val provider = detectProvider(config.apiKey).lowercase()
+        val headers = mutableMapOf<String, String>()
+        
+        when (provider) {
+            "anthropic" -> {
+                headers["x-api-key"] = config.apiKey
+                headers["anthropic-version"] = "2023-06-01"
+            }
+            else -> headers["Authorization"] = "Bearer ${config.apiKey}"
+        }
+        headers["Content-Type"] = "application/json"
+        headers["Accept"] = "text/event-stream"
+
+        val messages = mutableListOf<Map<String, String>>()
+        if (systemPrompt != null) {
+            messages.add(mapOf("role" to "system", "content" to systemPrompt))
+        }
+        messages.add(mapOf("role" to "user", "content" to prompt))
+
+        val body = mutableMapOf<String, Any>(
+            "model" to (config.model ?: getHardcodedModels(provider).first()),
+            "messages" to messages,
+            "stream" to true
+        )
+
+        val baseUrl = if (config.baseUrl.isNotBlank()) config.baseUrl else when(provider) {
+            "openai" -> "https://api.openai.com/v1/chat/completions"
+            "anthropic" -> "https://api.anthropic.com/v1/messages"
+            "groq" -> "https://api.groq.com/openai/v1/chat/completions"
+            "nvidia" -> "https://integrate.api.nvidia.com/v1/chat/completions"
+            else -> "https://api.openai.com/v1/chat/completions"
+        }
+
+        try {
+            val response = universalAiApi.genericChat(baseUrl, headers, body)
+            if (response.isSuccessful) {
+                val input = response.body()?.byteStream() ?: return@flow
+                val reader = BufferedReader(InputStreamReader(input))
+                
+                reader.useLines { lines ->
+                    lines.forEach { line ->
+                        if (line.startsWith("data: ")) {
+                            val data = line.substring(6).trim()
+                            if (data == "[DONE]") return@forEach
+                            
+                            try {
+                                val json = JSONObject(data)
+                                val content = when (provider) {
+                                    "anthropic" -> {
+                                        if (json.has("delta") && json.getJSONObject("delta").has("text")) {
+                                            json.getJSONObject("delta").getString("text")
+                                        } else ""
+                                    }
+                                    else -> {
+                                        val choices = json.getJSONArray("choices")
+                                        val delta = choices.getJSONObject(0).getJSONObject("delta")
+                                        if (delta.has("content")) delta.getString("content") else ""
+                                    }
+                                }
+                                if (content.isNotEmpty()) {
+                                    emit(content)
+                                }
+                            } catch (e: Exception) {
+                                // Skip malformed chunks
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 
@@ -307,5 +401,91 @@ class AiRepository(
         } catch (e: Exception) {
             Result.failure(e)
         }
+    }
+
+    private fun formatSystemContext(context: SystemContext): String {
+        return """
+            SYSTEM CONTEXT (DEEP MEMORY):
+            - Current Time: ${context.currentTime}
+            - User Level: ${context.userLevel} (Flow Score: ${context.flowScore})
+            - Active Tasks: ${context.tasks.filter { !it.completed }.joinToString { it.title }}
+            - Habits: ${context.habits.joinToString { "${it.name} (Streak: ${it.streak})" }}
+            - Recent Journal Vibes: ${context.recentMoods.joinToString()}
+            - Last 3 Journal Insights: ${context.journalEntries.take(3).joinToString { it.aiInsight ?: "None" }}
+        """.trimIndent()
+    }
+
+    suspend fun parseIntentWithContext(
+        input: String, 
+        context: SystemContext,
+        activeConfig: UserApiConfig?
+    ): Result<ParsedIntent> = runCatching {
+        val systemPrompt = """
+            You are the Jarvis AI core of FlowOS. 
+            You have deep access to the user's current state and history.
+            ${formatSystemContext(context)}
+            
+            Based on this context and the user's input, parse their intent.
+            If the user says "do it", refer to the most relevant pending task or suggestion.
+        """.trimIndent()
+        
+        val prompt = """
+            Input: "$input"
+            
+            Return ONLY a JSON object:
+            {
+              "type": "task" | "habit" | "search" | "action",
+              "title": "Cleaned title",
+              "category": "Work" | "Personal" | "Health" | "Finance" | "Social" | "Other",
+              "timeBlock": "Morning" | "Deep Work" | "Evening" | "Night" | null,
+              "isRecurring": boolean,
+              "searchQuery": "if search",
+              "actionTargetId": "if referring to an existing item"
+            }
+        """.trimIndent()
+        
+        val res = chat(prompt, activeConfig, systemPrompt = systemPrompt, jsonMode = true).getOrThrow()
+        val json = JSONObject(res)
+        ParsedIntent(
+            type = json.getString("type"),
+            title = json.optString("title"),
+            category = json.optString("category", "Other"),
+            timeBlock = if (json.isNull("timeBlock")) null else json.optString("timeBlock"),
+            isRecurring = json.optBoolean("isRecurring", false),
+            searchQuery = json.optString("searchQuery")
+        )
+    }
+
+    suspend fun parseIntent(input: String, activeConfig: UserApiConfig?): Result<ParsedIntent> = runCatching {
+        val prompt = """
+            Parse the following user input into a Task, Habit, or Search intent for FlowOS.
+            Input: "$input"
+            
+            Guidelines:
+            - If it sounds like a one-off action ("Buy milk", "Email Joe"), type is "task".
+            - If it sounds like a recurring activity ("Gym daily", "Meditate every morning"), type is "habit".
+            - If it sounds like a query about past data ("What did I do last Monday?", "Find my notes on project X"), type is "search".
+            
+            Return ONLY a JSON object:
+            {
+              "type": "task" | "habit" | "search",
+              "title": "The cleaned title",
+              "category": "Work" | "Personal" | "Health" | "Finance" | "Social" | "Other",
+              "timeBlock": "Morning" | "Deep Work" | "Evening" | "Night" | null,
+              "isRecurring": boolean,
+              "searchQuery": "if type is search"
+            }
+        """.trimIndent()
+        
+        val res = chat(prompt, activeConfig, jsonMode = true).getOrThrow()
+        val json = JSONObject(res)
+        ParsedIntent(
+            type = json.getString("type"),
+            title = json.optString("title"),
+            category = json.optString("category", "Other"),
+            timeBlock = if (json.isNull("timeBlock")) null else json.optString("timeBlock"),
+            isRecurring = json.optBoolean("isRecurring", false),
+            searchQuery = json.optString("searchQuery")
+        )
     }
 }

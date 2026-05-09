@@ -16,8 +16,10 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.todo.dailyroutine.ui.viewmodel.AiViewModel
+import com.todo.dailyroutine.ui.viewmodel.AiUiState
 import com.todo.dailyroutine.ui.theme.*
 import com.todo.dailyroutine.ui.components.DashboardScaffold
+import com.todo.dailyroutine.data.model.UserApiConfig
 
 @Composable
 fun AiConfigScreen(viewModel: AiViewModel, onBack: () -> Unit) {
@@ -41,7 +43,7 @@ fun AiConfigScreen(viewModel: AiViewModel, onBack: () -> Unit) {
 
         item {
             ScrollableRow(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 providers.forEach { provider ->
@@ -55,157 +57,239 @@ fun AiConfigScreen(viewModel: AiViewModel, onBack: () -> Unit) {
         }
 
         item {
-            val config = state.apiConfigs.find { it.providerName == selectedProvider }
-            
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(28.dp),
-                color = SurfaceCard,
-                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.05f))
-            ) {
-                Column(modifier = Modifier.padding(24.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            "$selectedProvider Configuration",
-                            style = Typography.titleLarge,
-                            color = Color.White,
-                            fontWeight = FontWeight.Black,
-                            modifier = Modifier.weight(1f)
-                        )
-                        
-                        // Connectivity Status Dot
-                        Box(
-                            modifier = Modifier
-                                .size(10.dp)
-                                .background(
-                                    if (state.testResult?.contains("Success") == true) SuccessGreen else Color.White.copy(alpha = 0.1f),
-                                    CircleShape
-                                )
-                        )
-                    }
-                    
-                    Spacer(Modifier.height(24.dp))
+            UniversalSetupCard(
+                selectedProvider = selectedProvider,
+                config = state.apiConfigs.find { it.providerName == selectedProvider },
+                onKeyChange = { viewModel.updateConfigField(selectedProvider, apiKey = it) },
+                onBaseUrlChange = { viewModel.updateConfigField(selectedProvider, baseUrl = it) },
+                onTest = { viewModel.testConnection(selectedProvider) },
+                onActivate = { viewModel.saveAndActivateConfig(selectedProvider) },
+                onFetchModels = { viewModel.fetchAvailableModels(selectedProvider) },
+                onSelectModel = { viewModel.updateConfigField(selectedProvider, model = it) },
+                state = state
+            )
+        }
+    }
+}
 
-                    ConfigField(
-                        label = "API Key",
-                        value = config?.apiKey ?: "",
-                        onValueChange = { 
-                            viewModel.updateConfigField(selectedProvider, apiKey = it)
-                            // Auto-detection will handle the provider switch in ViewModel
+@Composable
+fun UniversalSetupCard(
+    selectedProvider: String,
+    config: UserApiConfig?,
+    onKeyChange: (String) -> Unit,
+    onBaseUrlChange: (String) -> Unit,
+    onTest: () -> Unit,
+    onActivate: () -> Unit,
+    onFetchModels: () -> Unit,
+    onSelectModel: (String) -> Unit,
+    state: AiUiState
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(32.dp),
+        color = SurfaceCard,
+        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.05f))
+    ) {
+        Column(modifier = Modifier.padding(24.dp)) {
+            // Header with Magic Feel
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(CircleShape)
+                        .background(AccentPrimary.copy(alpha = 0.1f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = when(selectedProvider) {
+                            "OpenAI" -> Icons.Default.Bolt
+                            "Anthropic" -> Icons.Default.MenuBook
+                            "Google" -> Icons.Default.AutoAwesome
+                            "Nvidia" -> Icons.Default.Memory
+                            "Groq" -> Icons.Default.Speed
+                            else -> Icons.Default.Link
                         },
-                        placeholder = "sk-...",
-                        icon = Icons.Default.VpnKey,
-                        isPassword = true
+                        contentDescription = null,
+                        tint = AccentPrimary,
+                        modifier = Modifier.size(24.dp)
                     )
-
-                    Spacer(Modifier.height(16.dp))
-
-                    ConfigField(
-                        label = "Base URL (Optional)",
-                        value = config?.baseUrl ?: "",
-                        onValueChange = { viewModel.updateConfigField(selectedProvider, baseUrl = it) },
-                        placeholder = "https://api...",
-                        icon = Icons.Default.Link
+                }
+                
+                Spacer(Modifier.width(16.dp))
+                
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        selectedProvider,
+                        style = Typography.titleLarge,
+                        color = Color.White,
+                        fontWeight = FontWeight.Black
                     )
+                    Text(
+                        "Neural Interface Protocol",
+                        style = Typography.labelSmall,
+                        color = TextSecondary
+                    )
+                }
 
-                    Spacer(Modifier.height(24.dp))
+                StatusIndicator(state.testResult)
+            }
+            
+            Spacer(Modifier.height(32.dp))
 
-                    // Model Selection Area with Animation
-                    AnimatedVisibility(visible = true) {
-                        Column {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text("Model Selection", style = Typography.labelMedium, color = TextSecondary)
-                                    Text(
-                                        config?.model?.ifBlank { "None selected" } ?: "None selected",
-                                        style = Typography.bodyLarge,
-                                        color = Color.White
-                                    )
-                                }
-                                
-                                IconButton(
-                                    onClick = { viewModel.fetchAvailableModels(selectedProvider) },
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(12.dp))
-                                        .background(Color.White.copy(alpha = 0.05f))
-                                ) {
-                                    if (state.loading) {
-                                        CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp, color = AccentPrimary)
-                                    } else {
-                                        Icon(Icons.Default.Refresh, contentDescription = null, tint = Color.White)
-                                    }
-                                }
-                            }
+            // Magic Key Input
+            ConfigField(
+                label = "Neural Key",
+                value = config?.apiKey ?: "",
+                onValueChange = onKeyChange,
+                placeholder = "Paste your secret key here...",
+                icon = Icons.Default.VpnKey,
+                isPassword = true
+            )
 
-                            if (state.availableModels.isNotEmpty()) {
-                                Spacer(Modifier.height(16.dp))
-                                FlowRow(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    mainAxisSpacing = 8.dp,
-                                    crossAxisSpacing = 8.dp
-                                ) {
-                                    state.availableModels.forEach { model ->
-                                        val isSelected = config?.model == model
-                                        Surface(
-                                            modifier = Modifier.clickable { viewModel.updateConfigField(selectedProvider, model = model) },
-                                            shape = RoundedCornerShape(12.dp),
-                                            color = if (isSelected) AccentPrimary.copy(alpha = 0.2f) else Color.White.copy(alpha = 0.03f),
-                                            border = BorderStroke(1.dp, if (isSelected) AccentPrimary else Color.White.copy(alpha = 0.05f))
-                                        ) {
-                                            Text(
-                                                model,
-                                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
-                                                style = Typography.labelSmall,
-                                                color = if (isSelected) Color.White else TextSecondary
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
+            Spacer(Modifier.height(16.dp))
 
-                    Spacer(Modifier.height(32.dp))
+            ConfigField(
+                label = "Endpoint Relay (Optional)",
+                value = config?.baseUrl ?: "",
+                onValueChange = onBaseUrlChange,
+                placeholder = "Default Proxy active",
+                icon = Icons.Default.Hub
+            )
 
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        // Test Connection Button
-                        OutlinedButton(
-                            onClick = { viewModel.testConnection(selectedProvider) },
-                            modifier = Modifier.weight(0.4f).height(56.dp),
-                            shape = RoundedCornerShape(16.dp),
-                            border = BorderStroke(1.dp, Color.White.copy(alpha = 0.1f)),
-                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White)
-                        ) {
-                            Text("Test")
-                        }
+            Spacer(Modifier.height(24.dp))
 
-                        // Activate Button
-                        Button(
-                            onClick = { viewModel.saveAndActivateConfig(selectedProvider) },
-                            modifier = Modifier.weight(0.6f).height(56.dp),
-                            shape = RoundedCornerShape(16.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = if (config?.isActive == true) SuccessGreen else AccentPrimary
-                            )
-                        ) {
-                            Icon(if (config?.isActive == true) Icons.Default.CheckCircle else Icons.Default.PowerSettingsNew, contentDescription = null)
-                            Spacer(Modifier.width(8.dp))
-                            Text(if (config?.isActive == true) "Active" else "Activate")
-                        }
-                    }
-                    
-                    state.testResult?.let { result ->
-                        Spacer(Modifier.height(16.dp))
+            // Smart Model Selector
+            ModelSelector(
+                currentModel = config?.model,
+                availableModels = state.availableModels,
+                isLoading = state.loading,
+                onRefresh = onFetchModels,
+                onSelect = onSelectModel
+            )
+
+            Spacer(Modifier.height(32.dp))
+
+            // Action Cluster
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedButton(
+                    onClick = onTest,
+                    modifier = Modifier.weight(0.4f).height(56.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.1f)),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White)
+                ) {
+                    Text("Sync Link")
+                }
+
+                Button(
+                    onClick = onActivate,
+                    modifier = Modifier.weight(0.6f).height(56.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (config?.isActive == true) SuccessGreen else AccentPrimary
+                    )
+                ) {
+                    Icon(
+                        if (config?.isActive == true) Icons.Default.CheckCircle else Icons.Default.ElectricalServices,
+                        contentDescription = null
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(if (config?.isActive == true) "Synchronized" else "Initialize")
+                }
+            }
+            
+            state.testResult?.let { result ->
+                Spacer(Modifier.height(16.dp))
+                Text(
+                    result,
+                    style = Typography.labelSmall,
+                    color = if (result.contains("Success")) SuccessGreen else Color.White.copy(alpha = 0.4f),
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun StatusIndicator(testResult: String?) {
+    val isSuccess = testResult?.contains("Success") == true
+    val isError = testResult?.contains("Failed") == true
+    
+    val color = when {
+        isSuccess -> SuccessGreen
+        isError -> Color.Red.copy(alpha = 0.6f)
+        else -> Color.White.copy(alpha = 0.1f)
+    }
+
+    Box(
+        modifier = Modifier
+            .size(12.dp)
+            .clip(CircleShape)
+            .background(color)
+            .border(2.dp, color.copy(alpha = 0.3f), CircleShape)
+    )
+}
+
+@Composable
+fun ModelSelector(
+    currentModel: String?,
+    availableModels: List<String>,
+    isLoading: Boolean,
+    onRefresh: () -> Unit,
+    onSelect: (String) -> Unit
+) {
+    Column {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text("Model Core", style = Typography.labelMedium, color = TextSecondary)
+                Text(
+                    currentModel?.ifBlank { "Unidentified" } ?: "Unidentified",
+                    style = Typography.bodyLarge,
+                    color = if (currentModel.isNullOrBlank()) TextSecondary else Color.White,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+            
+            IconButton(
+                onClick = onRefresh,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Color.White.copy(alpha = 0.05f))
+            ) {
+                if (isLoading) {
+                    CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp, color = AccentPrimary)
+                } else {
+                    Icon(Icons.Default.AutoMode, contentDescription = null, tint = Color.White.copy(alpha = 0.6f))
+                }
+            }
+        }
+
+        if (availableModels.isNotEmpty()) {
+            Spacer(Modifier.height(16.dp))
+            FlowRow(
+                modifier = Modifier.fillMaxWidth(),
+                mainAxisSpacing = 8.dp,
+                crossAxisSpacing = 8.dp
+            ) {
+                availableModels.forEach { model ->
+                    val isSelected = currentModel == model
+                    Surface(
+                        modifier = Modifier.clickable { onSelect(model) },
+                        shape = RoundedCornerShape(12.dp),
+                        color = if (isSelected) AccentPrimary.copy(alpha = 0.1f) else Color.White.copy(alpha = 0.02f),
+                        border = BorderStroke(1.dp, if (isSelected) AccentPrimary else Color.White.copy(alpha = 0.05f))
+                    ) {
                         Text(
-                            result,
+                            model,
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
                             style = Typography.labelSmall,
-                            color = if (result.contains("Success")) SuccessGreen else Color.White.copy(alpha = 0.4f),
-                            modifier = Modifier.fillMaxWidth(),
-                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                            color = if (isSelected) Color.White else TextSecondary
                         )
                     }
                 }

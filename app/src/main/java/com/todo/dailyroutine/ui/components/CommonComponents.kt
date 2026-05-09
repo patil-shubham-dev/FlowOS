@@ -32,33 +32,102 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import com.todo.dailyroutine.ui.theme.*
+import com.todo.dailyroutine.ui.utils.shimmerEffect
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathMeasure
+import androidx.compose.ui.graphics.nativeCanvas
+import android.graphics.BlurMaskFilter
+import android.graphics.Paint
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.foundation.Canvas
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.StrokeCap
+
+        }
+    }
+}
 
 @Composable
-fun FlowStatCard(
-    label: String,
-    value: String,
-    color: Color,
-    modifier: Modifier = Modifier
+fun FlowLogo(
+    modifier: Modifier = Modifier,
+    showGlow: Boolean = true
 ) {
-    Surface(
+    Box(
         modifier = modifier
-            .fillMaxWidth()
-            .height(110.dp),
-        shape = RoundedCornerShape(20.dp),
-        color = SurfaceCard
+            .aspectRatio(1f)
+            .padding(8.dp),
+        contentAlignment = Alignment.Center
     ) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                    text = value,
-                    style = Typography.headlineLarge.copy(color = Color.White)
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val strokeWidth = size.width * 0.08f
+            val center = this.center
+            
+            // Outer Ring (Broken)
+            drawArc(
+                color = Color.White,
+                startAngle = -45f,
+                sweepAngle = 270f,
+                useCenter = false,
+                style = Stroke(width = strokeWidth, cap = androidx.compose.ui.graphics.StrokeCap.Round)
+            )
+
+            // The "F" / "C" inner tail
+            val path = Path().apply {
+                moveTo(size.width * 0.45f, size.height * 0.85f)
+                cubicTo(
+                    size.width * 0.45f, size.height * 0.4f,
+                    size.width * 0.45f, size.height * 0.4f,
+                    size.width * 0.85f, size.height * 0.4f
                 )
-                Text(
-                    text = label,
-                    style = Typography.labelSmall.copy(color = TextSecondary)
+            }
+            drawPath(
+                path = path,
+                color = Color.White,
+                style = Stroke(width = strokeWidth, cap = androidx.compose.ui.graphics.StrokeCap.Round)
+            )
+
+            // The Blue Dot Glow
+            if (showGlow) {
+                drawIntoCanvas { canvas ->
+                    val paint = Paint().apply {
+                        color = AccentPrimary.toArgb()
+                        maskFilter = BlurMaskFilter(size.width * 0.15f, BlurMaskFilter.Blur.NORMAL)
+                    }
+                    canvas.nativeCanvas.drawCircle(
+                        size.width * 0.35f,
+                        size.height * 0.65f,
+                        size.width * 0.1f,
+                        paint
+                    )
+                }
+            }
+
+            // The Blue Dot
+            drawCircle(
+                color = AccentPrimary,
+                radius = size.width * 0.04f,
+                center = androidx.compose.ui.geometry.Offset(size.width * 0.35f, size.height * 0.65f)
+            )
+            
+            // Orbital lines (Subtle)
+            for (i in 1..3) {
+                drawArc(
+                    color = Color.White.copy(alpha = 0.1f * i),
+                    startAngle = 135f,
+                    sweepAngle = 90f,
+                    useCenter = false,
+                    style = Stroke(width = 1.dp.toPx()),
+                    size = androidx.compose.ui.geometry.Size(
+                        size.width * (0.4f + i * 0.1f),
+                        size.height * (0.4f + i * 0.1f)
+                    ),
+                    topLeft = androidx.compose.ui.geometry.Offset(
+                        size.width * (0.3f - i * 0.05f),
+                        size.height * (0.3f - i * 0.05f)
+                    )
                 )
             }
         }
@@ -110,25 +179,36 @@ fun PillTabs(
 }
 
 @Composable
-fun ShimmerBox(
+fun SkeletonBox(
     modifier: Modifier = Modifier,
     shape: RoundedCornerShape = RoundedCornerShape(12.dp)
 ) {
-    val infiniteTransition = rememberInfiniteTransition()
-    val alpha by infiniteTransition.animateFloat(
-        initialValue = 0.2f,
-        targetValue = 0.4f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1000, easing = LinearEasing),
-            repeatMode = RepeatMode.Reverse
-        )
-    )
-
     Box(
         modifier = modifier
             .clip(shape)
-            .background(SurfaceElevated.copy(alpha = alpha))
+            .shimmerEffect()
     )
+}
+
+@Composable
+fun SkeletonCard(
+    modifier: Modifier = Modifier,
+    height: androidx.compose.ui.unit.Dp = 100.dp
+) {
+    Surface(
+        modifier = modifier.fillMaxWidth().height(height),
+        shape = RoundedCornerShape(24.dp),
+        color = SurfaceCard,
+        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.05f))
+    ) {
+        Column(Modifier.padding(20.dp)) {
+            SkeletonBox(Modifier.width(80.dp).height(12.dp), RoundedCornerShape(4.dp))
+            Spacer(Modifier.height(12.dp))
+            SkeletonBox(Modifier.fillMaxWidth().height(20.dp), RoundedCornerShape(4.dp))
+            Spacer(Modifier.height(8.dp))
+            SkeletonBox(Modifier.fillMaxWidth(0.6f).height(20.dp), RoundedCornerShape(4.dp))
+        }
+    }
 }
 
 @Composable
@@ -297,10 +377,11 @@ private fun MiniStat(label: String, done: Int, total: Int, color: Color) {
 fun DashboardScaffold(
     title: String,
     onBackClick: (() -> Unit)? = null,
+    modifier: Modifier = Modifier,
     content: LazyListScope.() -> Unit
 ) {
     Box(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
             .background(BackgroundBase)
     ) {
@@ -341,6 +422,74 @@ fun DashboardScaffold(
                 }
             }
             content()
+        }
+    }
+}
+
+@Composable
+fun CelebrationOverlay(
+    isVisible: Boolean,
+    message: String
+) {
+    Box(modifier = Modifier.fillMaxSize()) {
+        AnimatedVisibility(
+            visible = isVisible,
+            enter = fadeIn() + scaleIn(initialScale = 0.8f, animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy)),
+            exit = fadeOut() + scaleOut(targetScale = 1.2f),
+            modifier = Modifier.align(Alignment.Center)
+        ) {
+            Surface(
+                color = AccentPrimary,
+                shape = RoundedCornerShape(32.dp),
+                shadowElevation = 24.dp
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 32.dp, vertical = 20.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = Color.White, modifier = Modifier.size(32.dp))
+                    Spacer(Modifier.width(16.dp))
+                    Text(
+                        text = message,
+                        style = Typography.titleLarge,
+                        color = Color.White,
+                        fontWeight = FontWeight.Black
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun FlowStatCard(
+    label: String,
+    value: String,
+    color: Color,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(110.dp),
+        shape = RoundedCornerShape(20.dp),
+        color = SurfaceCard,
+        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.05f))
+    ) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    text = value,
+                    style = Typography.headlineLarge.copy(color = Color.White)
+                )
+                Text(
+                    text = label,
+                    style = Typography.labelSmall.copy(color = TextSecondary)
+                )
+            }
         }
     }
 }

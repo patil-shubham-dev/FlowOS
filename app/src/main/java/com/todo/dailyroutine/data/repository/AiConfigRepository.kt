@@ -2,6 +2,7 @@ package com.todo.dailyroutine.data.repository
 
 import com.todo.dailyroutine.data.model.UserApiConfig
 import com.todo.dailyroutine.data.session.SessionManager
+import com.todo.dailyroutine.util.SecurityManager
 
 import com.todo.dailyroutine.data.local.dao.AiConfigDao
 import com.todo.dailyroutine.data.local.entity.LocalAiConfig
@@ -25,7 +26,7 @@ class AiConfigRepository(
         userId = userId,
         providerName = providerName,
         baseUrl = baseUrl,
-        apiKey = apiKeyEncrypted,
+        apiKey = try { SecurityManager.decrypt(apiKeyEncrypted) } catch (e: Exception) { apiKeyEncrypted },
         headersJson = "",
         model = model,
         isActive = isActive
@@ -54,7 +55,7 @@ class AiConfigRepository(
                 userId = userId,
                 providerName = config.providerName,
                 baseUrl = config.baseUrl,
-                apiKeyEncrypted = config.apiKey,
+                apiKeyEncrypted = SecurityManager.encrypt(config.apiKey),
                 model = config.model,
                 isActive = config.isActive,
                 lastUpdated = System.currentTimeMillis(),

@@ -71,11 +71,10 @@ fun AiScreen(viewModel: AiViewModel) {
                 }
             }
 
-            // Input Area
             InputArea(
                 value = state.prompt,
                 onValueChange = { viewModel.onPromptChanged(it) },
-                onSend = { viewModel.sendMessage() },
+                onSend = { viewModel.sendStreamingMessage() },
                 enabled = !state.loading
             )
         }

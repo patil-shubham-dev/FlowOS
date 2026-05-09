@@ -15,6 +15,8 @@ class JournalRepository(
 ) {
     fun getAllEntries(): Flow<List<LocalJournalEntry>> = journalDao.getAllEntries()
 
+    suspend fun getAllEntriesSync(): List<LocalJournalEntry> = journalDao.getAllEntries().first()
+
     suspend fun saveEntry(userId: String, content: String, rating: Int, aiInsight: String? = null) {
         val entry = LocalJournalEntry(
             id = UUID.randomUUID().toString(),

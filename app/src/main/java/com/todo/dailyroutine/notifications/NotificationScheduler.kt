@@ -7,6 +7,8 @@ import android.os.Build
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
+import androidx.work.Constraints
+import androidx.work.NetworkType
 import java.util.concurrent.TimeUnit
 
 class NotificationScheduler(private val context: Context) {
@@ -25,6 +27,23 @@ class NotificationScheduler(private val context: Context) {
         workManager.enqueueUniquePeriodicWork(
             ReminderWorker.WORK_NAME,
             ExistingPeriodicWorkPolicy.UPDATE,
+            request
+        )
+    }
+
+    fun scheduleOracleDreaming() {
+        val workManager = WorkManager.getInstance(context)
+        val constraints = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .build()
+
+        val request = PeriodicWorkRequestBuilder<OracleWorker>(12, TimeUnit.HOURS)
+            .setConstraints(constraints)
+            .build()
+
+        workManager.enqueueUniquePeriodicWork(
+            OracleWorker.WORK_NAME,
+            ExistingPeriodicWorkPolicy.KEEP,
             request
         )
     }

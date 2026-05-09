@@ -21,6 +21,8 @@ import com.mohamedrejeb.richeditor.ui.material3.RichTextEditorDefaults
 import com.todo.dailyroutine.ui.viewmodel.*
 import com.todo.dailyroutine.ui.components.*
 import com.todo.dailyroutine.ui.theme.*
+import com.todo.dailyroutine.ui.utils.shimmerEffect
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -42,8 +44,34 @@ fun JournalScreen(viewModel: JournalViewModel, authViewModel: AuthViewModel) {
     }
     var currentRating by remember { mutableIntStateOf(5) }
     val haptic = LocalHapticFeedback.current
+    val scope = rememberCoroutineScope()
+    var showAiMenu by remember { mutableStateOf(false) }
+    val sheetState = rememberModalBottomSheetState()
+    
+    var selectedMood by remember { mutableStateOf<Mood?>(null) }
+    val aiPrompt = "The Oracle suggests: What's the biggest bottleneck in your current cycle?"
+    var isLoadingEntries by remember { mutableStateOf(true) }
+    val snackbarHostState = remember { SnackbarHostState() }
 
-    DashboardScaffold(title = "Reflection") {
+    LaunchedEffect(Unit) {
+        viewModel.saveEvent.collect {
+            snackbarHostState.showSnackbar("Reflection Synthesized")
+            richTextState.setText("")
+        }
+    }
+
+    LaunchedEffect(entries) {
+        if (entries.isNotEmpty()) isLoadingEntries = false
+    }
+
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        containerColor = Color.Transparent
+    ) { padding ->
+        DashboardScaffold(
+            title = "Reflection",
+            modifier = Modifier.padding(padding)
+        ) {
         item {
             JournalStreakHeader(streak = streak)
         }
@@ -74,6 +102,19 @@ fun JournalScreen(viewModel: JournalViewModel, authViewModel: AuthViewModel) {
                         )
                     )
                     
+                    MoodSelector(
+                        selectedMood = selectedMood,
+                        onMoodSelected = { selectedMood = it }
+                    )
+                    
+                    AiJournalPrompt(
+                        prompt = aiPrompt,
+                        onClick = { 
+                            val current = richTextState.toHtml()
+                            richTextState.setHtml(current + "<p><b>Topic:</b> $aiPrompt</p>")
+                        }
+                    )
+                    
                     Spacer(Modifier.height(16.dp))
                     
                     Surface(
@@ -83,6 +124,11 @@ fun JournalScreen(viewModel: JournalViewModel, authViewModel: AuthViewModel) {
                         border = BorderStroke(1.dp, Color.White.copy(alpha = 0.05f))
                     ) {
                         Column {
+                            JournalEditorToolbar(
+                                state = richTextState,
+                                onAiClick = { showAiMenu = true }
+                            )
+
                             RichTextEditor(
                                 state = richTextState,
                                 modifier = Modifier
@@ -92,7 +138,9 @@ fun JournalScreen(viewModel: JournalViewModel, authViewModel: AuthViewModel) {
                                 colors = RichTextEditorDefaults.richTextEditorColors(
                                     containerColor = Color.Transparent,
                                     cursorColor = AccentPrimary,
-                                    textColor = Color.White
+                                    textColor = Color.White,
+                                    focusedIndicatorColor = Color.Transparent,
+                                    unfocusedIndicatorColor = Color.Transparent
                                 ),
                                 placeholder = { Text("Synthesize your cycles...", color = TextTertiary) }
                             )
@@ -105,8 +153,17 @@ fun JournalScreen(viewModel: JournalViewModel, authViewModel: AuthViewModel) {
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 IconButton(onClick = { 
-                                    if (isVoiceListening) viewModel.stopVoiceRecording() 
-                                    else viewModel.startVoiceRecording()
+                                    if (isVoiceListening) {
+                                        viewModel.stopVoiceRecording { refined ->
+                                            val currentHtml = richTextState.toHtml()
+                                            richTextState.setHtml(currentHtml + "<p>$refined</p>")
+                                            scope.launch {
+                                                snackbarHostState.showSnackbar("Thought Stream Synced")
+                                            }
+                                        }
+                                    } else {
+                                        viewModel.startVoiceRecording()
+                                    }
                                 }) {
                                     Icon(
                                         imageVector = Icons.Default.Mic, 
@@ -149,10 +206,112 @@ fun JournalScreen(viewModel: JournalViewModel, authViewModel: AuthViewModel) {
             Text("Synced Journey", style = Typography.titleLarge, color = Color.White)
         }
 
-        items(entries) { entry ->
-            JournalEntryCard(entry)
+        if (isLoadingEntries) {
+            items(5) {
+                SkeletonCard(height = 120.dp)
+                Spacer(Modifier.height(16.dp))
+            }
+        } else {
+            items(entries) { entry ->
+                JournalEntryCard(entry)
+            }
         }
 
         item { Spacer(Modifier.height(120.dp)) }
+    }
+
+    if (showAiMenu) {
+        ModalBottomSheet(
+            onDismissRequest = { showAiMenu = false },
+            sheetState = sheetState,
+            containerColor = SurfaceCard,
+            dragHandleColor = Color.White.copy(alpha = 0.2f)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp)
+                    .navigationBarsPadding()
+            ) {
+                Text("AI Neural Processor", style = Typography.titleLarge, color = Color.White)
+                Text("Select an operation to perform on your reflection", style = Typography.labelSmall, color = TextSecondary)
+                
+                Spacer(Modifier.height(24.dp))
+                
+                AiMenuOption(
+                    title = "Refine & Polish",
+                    description = "Professionalize the entry for clarity",
+                    icon = Icons.Default.AutoAwesome,
+                    onClick = {
+                        viewModel.refineEntry(richTextState.toHtml(), JournalViewModel.RefineStyle.PROFESSIONAL) {
+                            richTextState.setHtml(it)
+                            showAiMenu = false
+                        }
+                    }
+                )
+                
+                AiMenuOption(
+                    title = "Condense",
+                    description = "Make it concise and impactful",
+                    icon = Icons.Default.ShortText,
+                    onClick = {
+                        viewModel.refineEntry(richTextState.toHtml(), JournalViewModel.RefineStyle.CONCISE) {
+                            richTextState.setHtml(it)
+                            showAiMenu = false
+                        }
+                    }
+                )
+
+                AiMenuOption(
+                    title = "Extract Action Items",
+                    description = "Identify tasks from your thoughts",
+                    icon = Icons.Default.Bolt,
+                    onClick = {
+                        viewModel.extractActionItems(richTextState.toHtml()) { tasks ->
+                            // In a real app, we'd show a task confirmation dialog here
+                            tasks.forEach { /* Task logic */ }
+                            showAiMenu = false
+                        }
+                    }
+                )
+                
+                Spacer(Modifier.height(32.dp))
+            }
+        }
+    }
+}
+
+@Composable
+fun AiMenuOption(
+    title: String,
+    description: String,
+    icon: ImageVector,
+    onClick: () -> Unit
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 6.dp)
+            .clickable { onClick() },
+        color = SurfaceElevated,
+        shape = RoundedCornerShape(16.dp),
+        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.03f))
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier.size(40.dp).background(AccentPrimary.copy(alpha = 0.1f), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(icon, contentDescription = null, tint = AccentPrimary, modifier = Modifier.size(20.dp))
+            }
+            Spacer(Modifier.width(16.dp))
+            Column {
+                Text(title, style = Typography.titleMedium, color = Color.White)
+                Text(description, style = Typography.labelSmall, color = TextSecondary)
+            }
+        }
     }
 }

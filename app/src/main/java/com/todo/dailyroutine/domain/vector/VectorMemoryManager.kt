@@ -18,7 +18,7 @@ class VectorMemoryManager(
         // Deduplication: Check for similarity > 0.9
         var existingMemory: LocalMemory? = null
         for (memory in allMemories) {
-            val storedEmbedding = vectorEngine.jsonToFloatArray(memory.embedding)
+            val storedEmbedding = vectorEngine.byteArrayToFloatArray(memory.embedding)
             val similarity = vectorEngine.calculateCosineSimilarity(embedding, storedEmbedding)
             if (similarity > 0.9f) {
                 existingMemory = memory
@@ -40,7 +40,7 @@ class VectorMemoryManager(
                 id = UUID.randomUUID().toString(),
                 userId = userId,
                 text = text,
-                embedding = vectorEngine.floatArrayToJson(embedding),
+                embedding = vectorEngine.floatArrayToByteArray(embedding),
                 type = type,
                 importance = importance
             )
@@ -53,7 +53,7 @@ class VectorMemoryManager(
         val allMemories = memoryDao.getAllMemories(userId)
         
         return@withContext allMemories
-            .map { it to vectorEngine.calculateCosineSimilarity(queryEmbedding, vectorEngine.jsonToFloatArray(it.embedding)) }
+            .map { it to vectorEngine.calculateCosineSimilarity(queryEmbedding, vectorEngine.byteArrayToFloatArray(it.embedding)) }
             .filter { it.second > 0.3f } // Minimum relevance threshold
             .sortedByDescending { it.second }
             .take(limit)

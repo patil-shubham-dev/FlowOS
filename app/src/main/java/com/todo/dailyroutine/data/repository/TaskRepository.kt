@@ -16,6 +16,8 @@ class TaskRepository(
 ) {
     val tasks: Flow<List<TaskItem>> = taskDao.getAllTasks().map { list -> list.map { it.toModel() } }
 
+    suspend fun getAllTasksSync(): List<TaskItem> = taskDao.getAllTasks().first().map { it.toModel() }
+
     suspend fun fetchTasks(): Result<Unit> = Result.success(Unit) // Local-only: no fetch needed
 
 
@@ -61,5 +63,14 @@ class TaskRepository(
 
     suspend fun softDeleteTask(id: String): Result<Unit> = runCatching {
         taskDao.softDeleteTask(id)
+    }
+
+    suspend fun applySortOrder(order: List<String>): Result<Unit> = runCatching {
+        val currentTasks = taskDao.getAllTasks().first()
+        order.forEachIndexed { index, taskId ->
+            currentTasks.find { it.id == taskId }?.let { task ->
+                taskDao.updateTask(task.copy(sortOrder = index, syncStatus = 2))
+            }
+        }
     }
 }
