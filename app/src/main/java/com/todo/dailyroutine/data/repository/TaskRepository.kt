@@ -73,4 +73,10 @@ class TaskRepository(
             }
         }
     }
+
+    suspend fun clearAllTasks() {
+        taskDao.getAllTasks().first().forEach {
+            taskDao.softDeleteTask(it.id)
+        }
+    }
 }

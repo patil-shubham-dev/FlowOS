@@ -34,7 +34,11 @@ class JournalViewModel(
 
     private fun loadStreak() {
         viewModelScope.launch {
-            _streak.value = repository.getCurrentStreak("user")
+            try {
+                _streak.value = repository.getCurrentStreak("user")
+            } catch (e: Exception) {
+                _streak.value = 0
+            }
         }
     }
 

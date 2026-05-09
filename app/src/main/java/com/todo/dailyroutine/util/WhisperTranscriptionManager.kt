@@ -2,7 +2,7 @@ package com.todo.dailyroutine.util
 
 import android.content.Context
 import com.todo.dailyroutine.data.repository.AiRepository
-import com.todo.dailyroutine.data.repository.AiConfigRepository
+import com.todo.dailyroutine.data.session.SessionManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.Dispatchers
@@ -12,7 +12,7 @@ import java.io.File
 class WhisperTranscriptionManager(
     private val context: Context,
     private val aiRepository: AiRepository,
-    private val configRepository: AiConfigRepository
+    private val sessionManager: SessionManager
 ) {
     private val recorder = AudioRecorder(context)
     
@@ -33,7 +33,7 @@ class WhisperTranscriptionManager(
         _isListening.value = false
         
         if (file != null && file.exists()) {
-            val config = configRepository.getConfigs().getOrNull()?.find { it.isActive }
+            val config = sessionManager.getAiConfig()
             val result = aiRepository.transcribeAudio(file, config)
             result.onSuccess { transcribed ->
                 _text.value = transcribed

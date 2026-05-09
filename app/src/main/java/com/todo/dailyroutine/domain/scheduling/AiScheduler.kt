@@ -2,13 +2,13 @@ package com.todo.dailyroutine.domain.scheduling
 
 import com.todo.dailyroutine.data.local.entity.LocalTask
 import com.todo.dailyroutine.data.repository.AiRepository
-import com.todo.dailyroutine.data.model.UserApiConfig
+import com.todo.dailyroutine.data.model.AiProviderConfig
 
 class AiScheduler(private val aiRepository: AiRepository) {
 
     suspend fun optimizeSchedule(
         tasks: List<LocalTask>,
-        activeConfig: UserApiConfig?
+        activeConfig: AiProviderConfig?
     ): Result<List<Pair<String, Int>>> = runCatching {
         if (tasks.isEmpty()) return@runCatching emptyList()
 

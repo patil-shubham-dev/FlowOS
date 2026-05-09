@@ -6,11 +6,20 @@ import androidx.lifecycle.viewModelScope
 import com.todo.dailyroutine.data.model.DashboardStats
 import com.todo.dailyroutine.data.model.HabitItem
 import com.todo.dailyroutine.data.model.TaskItem
-import com.todo.dailyroutine.data.model.UserApiConfig
+import com.todo.dailyroutine.data.model.AiProviderConfig
+import com.todo.dailyroutine.data.model.ModelInfo
+import com.todo.dailyroutine.data.model.ChatMessage
 import com.todo.dailyroutine.data.repository.AiRepository
 import com.todo.dailyroutine.data.repository.HabitRepository
 import com.todo.dailyroutine.data.repository.TaskRepository
+import com.todo.dailyroutine.data.repository.JournalRepository
+import com.todo.dailyroutine.data.repository.ChatRepository
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.onCompletion
+import kotlinx.coroutines.flow.onStart
+import com.todo.dailyroutine.data.local.entity.LocalJournalEntry
 import com.todo.dailyroutine.data.local.toEntity
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -31,6 +40,16 @@ data class HomeUiState(
     val oracleInsight: String? = null,
     val collapsedSections: Map<String, Boolean> = emptyMap(),
     val celebrationMessage: String? = null,
+    val chatHistory: List<ChatMessage> = listOf(ChatMessage("assistant", "How can I help you optimize your day today?")),
+    val journalEntries: List<LocalJournalEntry> = emptyList(),
+    val isTyping: Boolean = false,
+    val displayName: String = "Shubham Patil",
+    val coreGoal: String = "Master Full-Stack Dev",
+    val appearance: String = "Obsidian Dark",
+    val aiConfig: AiProviderConfig = AiProviderConfig("google", "Google Gemini", "••••••••", ""),
+    val availableModels: List<ModelInfo> = emptyList(),
+    val notificationsEnabled: Boolean = true,
+    val appLockEnabled: Boolean = false,
     val error: String? = null
 )
 
@@ -38,6 +57,9 @@ class HomeViewModel(
     val taskRepository: TaskRepository,
     val habitRepository: HabitRepository,
     private val aiRepository: AiRepository,
+    private val journalRepository: JournalRepository,
+    private val chatRepository: ChatRepository,
+    private val sessionManager: com.todo.dailyroutine.data.session.SessionManager,
     private val aiScheduler: AiScheduler
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -45,14 +67,46 @@ class HomeViewModel(
 
     init {
         observeData()
+        loadChatHistory()
+    }
+
+    private fun loadChatHistory() {
+        viewModelScope.launch {
+            val history = chatRepository.getRecentMessages()
+            if (history.isNotEmpty()) {
+                _uiState.value = _uiState.value.copy(chatHistory = history)
+            }
+        }
+    }
+
+    private fun formatDataForPrompt(): String {
+        val state = _uiState.value
+        val activeTasks = state.tasks.filter { !it.completed }
+        val tasksText = activeTasks.joinToString { "${it.title} [${it.category}]" }
+        val habitsText = state.habits.joinToString { "${it.name} (Streak: ${it.streak})" }
+        val recentJournals = state.journalEntries.takeLast(3).joinToString("\n") { "- ${it.content}" }
+        
+        return """
+            --- SYSTEM MEMORY ---
+            ACTIVE TASKS (${activeTasks.size}): ${if (tasksText.isBlank()) "None" else tasksText}
+            ACTIVE HABITS: ${if (habitsText.isBlank()) "None" else habitsText}
+            RECENT REFLECTIONS:
+            ${if (recentJournals.isBlank()) "No recent journals" else recentJournals}
+            CURRENT METRICS: ${state.stats.progressPercent}% sync, Level: ${state.stats.level}
+            --- END MEMORY ---
+        """.trimIndent()
     }
 
     private fun observeData() {
         viewModelScope.launch {
-            combine(taskRepository.tasks, habitRepository.habits) { tasks, habits ->
-                tasks to habits
-            }.collect { (tasks, habits) ->
-                val completedTasks = tasks.count { it.completed }
+            combine(
+                taskRepository.tasks, 
+                habitRepository.habits,
+                journalRepository.getAllEntries()
+            ) { tasks, habits, journals ->
+                Triple(tasks, habits, journals)
+            }.collect { (tasks, habits, journals) ->
+                val completedTasks = tasks.count { t -> t.completed }
                 
                 // Refined Sync %: Completion + Time Block Adherence
                 val currentHour = java.time.LocalTime.now().hour
@@ -63,12 +117,12 @@ class HomeViewModel(
                     else -> "Night"
                 }
                 
-                val adherenceBonus = tasks.count { it.completed && it.timeBlock == currentBlock } * 5
+                val adherenceBonus = tasks.count { t -> t.completed && t.timeBlock == currentBlock } * 5
                 val baseProgress = if (tasks.isNotEmpty()) (completedTasks * 100) / tasks.size else 0
                 val syncPercent = (baseProgress + adherenceBonus).coerceAtMost(100)
                 
                 // Calculate XP from tasks and habits
-                val totalXp = (completedTasks * 10) + habits.sumOf { it.streak * 5 }
+                val totalXp = (completedTasks * 10) + habits.sumOf { h -> h.streak * 5 }
                 val level = GamificationManager.calculateLevel(totalXp)
                 
                 _uiState.value = _uiState.value.copy(
@@ -76,14 +130,20 @@ class HomeViewModel(
                     habits = habits,
                     stats = DashboardStats(
                         progressPercent = syncPercent,
-                        pendingTasks = tasks.count { !it.completed },
+                        pendingTasks = tasks.count { t -> !t.completed },
                         totalXp = totalXp,
                         level = GamificationManager.getLevelTitle(level)
-                    )
+                    ),
+                    journalEntries = journals,
+                    appearance = sessionManager.getAppearance(),
+                    aiConfig = sessionManager.getAiConfig(),
+                    notificationsEnabled = sessionManager.isNotificationsEnabled(),
+                    appLockEnabled = sessionManager.isAppLockEnabled()
                 )
             }
         }
     }
+
 
     fun refresh(forceRemote: Boolean = false) {
         _uiState.value = _uiState.value.copy(loading = true)
@@ -107,7 +167,8 @@ class HomeViewModel(
             tasks = state.tasks,
             habits = state.habits,
             level = state.stats.level,
-            xp = state.stats.totalXp
+            xp = state.stats.totalXp,
+            config = state.aiConfig
         )
         _uiState.value = _uiState.value.copy(nextBestAction = res.getOrDefault("Next best action: complete your top priority task."))
     }
@@ -144,12 +205,13 @@ class HomeViewModel(
             Return ONLY the insight text.
         """.trimIndent()
         
-        val insight = aiRepository.chat(insightPrompt).getOrNull() ?: "Maintain current execution protocol."
+        val insight = aiRepository.chat(insightPrompt, activeConfig = state.aiConfig).getOrNull() ?: "Maintain current execution protocol."
         _uiState.value = _uiState.value.copy(oracleInsight = insight)
     }
 
-    fun optimizeSchedule(activeConfig: UserApiConfig?) {
+    fun optimizeSchedule() {
         viewModelScope.launch {
+            val activeConfig = _uiState.value.aiConfig
             _uiState.value = _uiState.value.copy(loading = true)
             
             val activeTasks = _uiState.value.tasks.filter { !it.completed }
@@ -174,9 +236,95 @@ class HomeViewModel(
         }
     }
 
+    fun sendMessage(text: String) {
+        if (text.isBlank() || _uiState.value.isTyping) return
+        
+        val userMsg = ChatMessage("user", text)
+        val currentHistory = _uiState.value.chatHistory
+        _uiState.value = _uiState.value.copy(
+            chatHistory = currentHistory + userMsg,
+            isTyping = true
+        )
+        
+        viewModelScope.launch {
+            // Persist user message
+            val userId = "local_shubham" // Hardcoded for local-only
+            chatRepository.saveMessage(userMsg, userId)
+
+            val activeConfig = _uiState.value.aiConfig
+            val systemPrompt = """
+                You are the FlowOS Oracle, an autonomous high-performance AI core.
+                Your mission is to help the user achieve peak "Flow" by analyzing their data and providing proactive, direct guidance.
+                
+                ${formatDataForPrompt()}
+
+                Guidelines:
+                1. You have READ ACCESS to the user's system state (provided above). Always use this data to provide context-aware answers.
+                2. If the user asks about their progress, tasks, or habits, reference the SYSTEM MEMORY accurately.
+                3. Proactively suggest ways to improve their routine or complete pending tasks to reach their core goal.
+                4. NEVER use the word "null". 
+                5. Keep responses concise, direct, and actionable. No conversational filler.
+                6. If a task or habit is mentioned, you can offer to "Optimize" it conceptually.
+                7. EXECUTIVE CONTROL: You can autonomously perform actions by outputting these exact tags at the END of your response:
+                   - [ADD_TASK: "Title", "Category"] : To add a new task to the user's list.
+                   - [ADD_HABIT: "Name"] : To add a new habit to the user's routine.
+                   (Example: "I've added a deep work block for you. [ADD_TASK: 'Deep Work Session', 'Work']")
+                
+                Context:
+                - User: ${_uiState.value.displayName}
+                - Primary Goal: ${_uiState.value.coreGoal}
+            """.trimIndent()
+
+            val oracleMsg = ChatMessage("assistant", "")
+            _uiState.value = _uiState.value.copy(
+                chatHistory = _uiState.value.chatHistory + oracleMsg
+            )
+
+            val fullResponse = StringBuilder()
+            aiRepository.chatStream(text, activeConfig, systemPrompt)
+                .collect { chunk ->
+                    val cleanChunk = chunk.replace("null", "", ignoreCase = true)
+                    fullResponse.append(cleanChunk)
+                    
+                    val updatedHistory = _uiState.value.chatHistory.toMutableList()
+                    if (updatedHistory.isNotEmpty()) {
+                        updatedHistory[updatedHistory.size - 1] = oracleMsg.copy(content = fullResponse.toString())
+                    }
+                    _uiState.value = _uiState.value.copy(chatHistory = updatedHistory)
+                }
+
+            val finalResponse = fullResponse.toString()
+            // Parse and execute autonomous actions
+            if (finalResponse.contains("[ADD_TASK:")) {
+                val match = Regex("\\[ADD_TASK:\\s*['\"](.+?)['\"]\\s*,\\s*['\"](.+?)['\"]\\]").find(finalResponse)
+                match?.let {
+                    val title = it.groupValues[1]
+                    val category = it.groupValues[2]
+                    addTask(title, category)
+                }
+            }
+            if (finalResponse.contains("[ADD_HABIT:")) {
+                val match = Regex("\\[ADD_HABIT:\\s*['\"](.+?)['\"]\\]").find(finalResponse)
+                match?.let {
+                    val name = it.groupValues[1]
+                    addHabit(name)
+                }
+            }
+
+            _uiState.value = _uiState.value.copy(isTyping = false)
+            chatRepository.saveMessage(ChatMessage("assistant", finalResponse), userId)
+        }
+    }
+
     fun addTask(title: String, category: String) {
         viewModelScope.launch {
             taskRepository.addTask(title, category)
+        }
+    }
+
+    fun deleteTask(taskId: String) {
+        viewModelScope.launch {
+            taskRepository.softDeleteTask(taskId)
         }
     }
 
@@ -207,9 +355,38 @@ class HomeViewModel(
         }
     }
 
+    fun deleteHabit(habitId: String) {
+        viewModelScope.launch {
+            habitRepository.deleteHabit(habitId)
+        }
+    }
+
     fun toggleHabit(habit: HabitItem) {
         viewModelScope.launch {
             habitRepository.toggleHabit(habit)
+        }
+    }
+
+    fun addJournalEntry(content: String, rating: Int) {
+        viewModelScope.launch {
+            val userId = taskRepository.tasks.first().firstOrNull()?.userId ?: "local_shubham"
+            journalRepository.saveEntry(userId, content, rating, "Reflection captured.")
+        }
+    }
+
+    fun resetSystem() {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(loading = true)
+            // Need clear functions in repositories
+            taskRepository.clearAllTasks()
+            habitRepository.clearAllHabits()
+            // journalRepository clear as well if possible
+            _uiState.value = _uiState.value.copy(
+                tasks = emptyList(),
+                habits = emptyList(),
+                journalEntries = emptyList(),
+                loading = false
+            )
         }
     }
 
@@ -218,6 +395,93 @@ class HomeViewModel(
         _uiState.value = _uiState.value.copy(
             collapsedSections = current + (section to !(current[section] ?: false))
         )
+    }
+
+    fun updateDisplayName(name: String) {
+        sessionManager.setDisplayName(name)
+        _uiState.value = _uiState.value.copy(displayName = name)
+    }
+
+    fun updateCoreGoal(goal: String) {
+        sessionManager.setCoreGoal(goal)
+        _uiState.value = _uiState.value.copy(coreGoal = goal)
+    }
+
+    fun updateAppearance(value: String) {
+        sessionManager.setAppearance(value)
+        _uiState.value = _uiState.value.copy(appearance = value)
+    }
+
+    fun updateAiConfig(config: AiProviderConfig) {
+        sessionManager.setAiConfig(config)
+        _uiState.value = _uiState.value.copy(aiConfig = config)
+    }
+
+    fun detectAiProvider(apiKey: String) {
+        if (apiKey.isBlank()) return
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isTyping = true, error = null)
+            val result = aiRepository.detectProviderAndModels(apiKey)
+            if (result != null) {
+                val (config, models) = result
+                val finalConfig = if (models.isNotEmpty()) {
+                    config.copy(
+                        selectedModelId = models[0].id,
+                        selectedModelName = models[0].displayName
+                    )
+                } else config
+                
+                _uiState.value = _uiState.value.copy(
+                    aiConfig = finalConfig,
+                    availableModels = models,
+                    isTyping = false,
+                    celebrationMessage = "Detected: ${config.providerName}"
+                )
+                delay(1500)
+                _uiState.value = _uiState.value.copy(celebrationMessage = null)
+            } else {
+                _uiState.value = _uiState.value.copy(
+                    isTyping = false,
+                    error = "Provider detection failed. Check API key."
+                )
+            }
+        }
+    }
+
+    fun fetchModelsFromProvider() {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isTyping = true)
+            val models = aiRepository.fetchModels(_uiState.value.aiConfig)
+            _uiState.value = _uiState.value.copy(
+                availableModels = models,
+                isTyping = false
+            )
+        }
+    }
+
+    fun testAiConnection() {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isTyping = true)
+            val result = aiRepository.testConnection(_uiState.value.aiConfig)
+            _uiState.value = _uiState.value.copy(
+                isTyping = false,
+                celebrationMessage = if (result.getOrDefault(false)) "Protocol Online" else "Sync Failed"
+            )
+            delay(2000)
+            _uiState.value = _uiState.value.copy(celebrationMessage = null)
+        }
+    }
+
+    fun toggleNotifications() {
+        val next = !_uiState.value.notificationsEnabled
+        sessionManager.setNotificationsEnabled(next)
+        _uiState.value = _uiState.value.copy(notificationsEnabled = next)
+    }
+
+    fun toggleAppLock() {
+        val next = !_uiState.value.appLockEnabled
+        sessionManager.setAppLockEnabled(next)
+        _uiState.value = _uiState.value.copy(appLockEnabled = next)
     }
 
     fun moveTask(from: ItemPosition, to: ItemPosition) {
@@ -247,10 +511,13 @@ class HomeViewModelFactory(
     private val taskRepository: TaskRepository,
     private val habitRepository: HabitRepository,
     private val aiRepository: AiRepository,
+    private val journalRepository: JournalRepository,
+    private val chatRepository: ChatRepository,
+    private val sessionManager: com.todo.dailyroutine.data.session.SessionManager,
     private val aiScheduler: AiScheduler
 ) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        return HomeViewModel(taskRepository, habitRepository, aiRepository, aiScheduler) as T
+        return HomeViewModel(taskRepository, habitRepository, aiRepository, journalRepository, chatRepository, sessionManager, aiScheduler) as T
     }
 }

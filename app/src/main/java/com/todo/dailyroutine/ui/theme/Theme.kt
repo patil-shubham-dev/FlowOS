@@ -1,7 +1,6 @@
 package com.todo.dailyroutine.ui.theme
 
 import android.app.Activity
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
@@ -11,31 +10,30 @@ import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
 private val DarkColorScheme = darkColorScheme(
-    primary = AccentPrimary,
-    secondary = AccentSecondary,
-    tertiary = TextTertiary,
-    background = BackgroundBase,
-    surface = SurfaceCard,
+    primary = AccentBlue,
+    secondary = ObsidianSurfaceElevated,
+    tertiary = AccentBlueSoft,
+    background = ObsidianBackground,
+    surface = ObsidianSurface,
     onPrimary = TextPrimary,
     onSecondary = TextPrimary,
-    onTertiary = TextPrimary,
+    onTertiary = AccentBlue,
     onBackground = TextPrimary,
     onSurface = TextPrimary,
-    error = DestructiveRed,
-    outline = TextTertiary.copy(alpha = 0.5f)
 )
 
 @Composable
-fun FlowOSTheme(
+fun DailyRoutineTheme(
     content: @Composable () -> Unit
 ) {
     val colorScheme = DarkColorScheme
     val view = LocalView.current
+    
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
-            window.statusBarColor = colorScheme.background.toArgb()
-            window.navigationBarColor = colorScheme.background.toArgb()
+            window.statusBarColor = ObsidianBackground.toArgb()
+            window.navigationBarColor = ObsidianBackground.toArgb()
             WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = false
         }
     }

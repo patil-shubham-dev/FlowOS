@@ -69,4 +69,10 @@ class HabitRepository(
             habitDao.insertHabit(habit.copy(syncStatus = 3))
         }
     }
+
+    suspend fun clearAllHabits() {
+        habitDao.getAllHabits().first().forEach {
+            habitDao.insertHabit(it.copy(syncStatus = 3))
+        }
+    }
 }

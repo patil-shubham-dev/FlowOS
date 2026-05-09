@@ -9,8 +9,9 @@ import java.util.concurrent.TimeUnit
 
 object ApiClient {
     private val logger = HttpLoggingInterceptor().apply {
+        // Only log headers to prevent body-related connection issues and memory pressure
         level = if (BuildConfig.DEBUG) {
-            HttpLoggingInterceptor.Level.BODY
+            HttpLoggingInterceptor.Level.HEADERS
         } else {
             HttpLoggingInterceptor.Level.NONE
         }
@@ -18,8 +19,13 @@ object ApiClient {
 
     private val okHttp = OkHttpClient.Builder()
         .addInterceptor(logger)
-        .connectTimeout(20, TimeUnit.SECONDS)
-        .readTimeout(20, TimeUnit.SECONDS)
+        .connectTimeout(300, TimeUnit.SECONDS)
+        .readTimeout(300, TimeUnit.SECONDS)
+        .writeTimeout(300, TimeUnit.SECONDS)
+        .callTimeout(300, TimeUnit.SECONDS)
+        .retryOnConnectionFailure(true)
+        .protocols(listOf(okhttp3.Protocol.HTTP_1_1)) // Force HTTP/1.1 to avoid HTTP/2 stream errors on Android
+        .connectionPool(okhttp3.ConnectionPool(10, 5, TimeUnit.MINUTES))
         .build()
 
     private val aiRetrofit = Retrofit.Builder()

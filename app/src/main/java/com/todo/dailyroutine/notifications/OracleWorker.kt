@@ -19,8 +19,7 @@ class OracleWorker(
         val app = applicationContext as DailyRoutineApp
         val container = app.container
         
-        val userId = container.sessionManager.getUserId() ?: "local_user"
-        val config = container.aiConfigRepository.getActiveConfig() ?: return Result.failure()
+        val config = container.sessionManager.getAiConfig()
 
         // 1. Build Deep Context
         val tasks = container.taskRepository.getAllTasksSync()
@@ -57,10 +56,7 @@ class OracleWorker(
             
             MISSION OBJECTIVE:
             Generate a HIGH-FIDELITY, PROACTIVE NUDGE. 
-            Target the most critical divergence in their current flow:
-            - High-energy task backlog? Inject momentum.
-            - Low focus/vibe? Restore baseline via Stoic/Agentic perspective.
-            - Ritual at risk? Issue a "Protocol Guard" warning.
+            Target the most critical divergence in their current flow.
             
             TONE: Elite, precise, agentic. No fluff.
             FORMAT: Single sentence. Max 18 words.
@@ -79,7 +75,7 @@ class OracleWorker(
         val manager = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         
         val notification = NotificationCompat.Builder(applicationContext, FlowNotificationEngine.CHANNEL_BRIEFING)
-            .setSmallIcon(android.R.drawable.ic_dialog_info) // Fallback icon
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setContentTitle("Oracle Neural Briefing")
             .setContentText(content)
             .setStyle(NotificationCompat.BigTextStyle().bigText(content))

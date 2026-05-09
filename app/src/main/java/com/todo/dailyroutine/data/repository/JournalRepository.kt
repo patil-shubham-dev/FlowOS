@@ -55,7 +55,16 @@ class JournalRepository(
         val entries = journalDao.getEntriesByUserId(userId).firstOrNull() ?: return 0
         if (entries.isEmpty()) return 0
         
-        val dates = entries.map { java.time.LocalDate.parse(it.date) }.sortedDescending()
+        val dates = entries.mapNotNull { 
+            try {
+                java.time.LocalDate.parse(it.date)
+            } catch (e: Exception) {
+                null
+            }
+        }.sortedDescending()
+        
+        if (dates.isEmpty()) return 0
+        
         var streak = 0
         var currentDate = java.time.LocalDate.now()
         

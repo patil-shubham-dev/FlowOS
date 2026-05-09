@@ -16,7 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.core.content.ContextCompat
 import com.todo.dailyroutine.ui.DailyRoutineAppContent
-import com.todo.dailyroutine.ui.theme.FlowOSTheme
+import com.todo.dailyroutine.ui.theme.DailyRoutineTheme
 import com.todo.dailyroutine.util.AppLockManager
 
 class MainActivity : FragmentActivity() {
@@ -31,7 +31,7 @@ class MainActivity : FragmentActivity() {
         maybeRequestNotificationPermission()
         
         setContent {
-            FlowOSTheme {
+            DailyRoutineTheme {
                 if (isUnlocked) {
                     DailyRoutineAppContent()
                 } else {

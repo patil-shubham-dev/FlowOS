@@ -12,6 +12,14 @@ interface UniversalAiApi {
         @Body body: Map<String, @JvmSuppressWildcards Any>
     ): Response<ResponseBody>
 
+    @Streaming
+    @POST
+    suspend fun genericChatStream(
+        @Url url: String,
+        @HeaderMap headers: Map<String, String>,
+        @Body body: Map<String, @JvmSuppressWildcards Any>
+    ): Response<ResponseBody>
+
     @GET
     suspend fun getModels(
         @Url url: String,

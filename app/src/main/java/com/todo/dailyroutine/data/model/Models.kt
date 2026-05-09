@@ -46,16 +46,6 @@ data class DashboardStats(
     val level: String
 )
 
-data class UserApiConfig(
-    val id: String = "",
-    val userId: String = "",
-    val providerName: String,
-    val baseUrl: String,
-    val apiKey: String,
-    val headersJson: String? = null,
-    val model: String? = null,
-    val isActive: Boolean = false
-)
 
 data class ChatMessage(
     val role: String,

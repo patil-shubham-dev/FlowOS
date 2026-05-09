@@ -1,28 +1,34 @@
 package com.todo.dailyroutine.ui.theme
 
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 
-// Obsidian Deep Theme
-val BackgroundBase = Color(0xFF010101)
-val SurfaceCard = Color(0xFF0A0A0A)
-val SurfaceElevated = Color(0xFF141414)
+// Obsidian Design System - Base Palette
+val ObsidianBackground = Color(0xFF000000)
+val ObsidianSurface = Color(0xFF0B0B0F)
+val ObsidianSurfaceElevated = Color(0xFF16161D)
+val ObsidianSurfaceBright = Color(0xFF1C1C24)
 
-// Electric Blue Branding
-val AccentPrimary = Color(0xFF007AFF) // Electric Blue from the logo dot
-val AccentSecondary = Color(0xFFFFFFFF) // Pure White from logo lines
+// Primary Accents
+val AccentBlue = Color(0xFF007AFF) // SF Blue
+val AccentBlueSoft = Color(0xFF007AFF).copy(alpha = 0.15f)
+val AccentBlueMuted = Color(0xFF007AFF).copy(alpha = 0.4f)
 
+// Semantic Colors
 val SuccessGreen = Color(0xFF34C759)
-val DestructiveRed = Color(0xFFFF3B30)
+val WarningYellow = Color(0xFFFFCC00)
+val ErrorRed = Color(0xFFFF3B30)
 
+// Text Hierarchy
 val TextPrimary = Color(0xFFFFFFFF)
-val TextSecondary = Color(0xFF7B7B7B)
-val TextTertiary = Color(0xFF333333)
+val TextSecondary = Color(0xFF8E8E93)
+val TextMuted = Color(0xFF48484A)
 
-val AccentGradient = Brush.linearGradient(
-    colors = listOf(AccentPrimary, Color(0xFF5856D6)) // Blue to Indigo
-)
+// Status Colors (from Protocol Sync)
+val StatusMemory = Color(0xFF34C759)
+val StatusTasks = Color(0xFF007AFF)
+val StatusRituals = Color(0xFFFFCC00)
+val StatusJournal = Color(0xFF5856D6)
 
-val BorderGradient = Brush.linearGradient(
-    listOf(AccentPrimary.copy(alpha = 0.3f), Color.White.copy(alpha = 0.1f))
-)
+// Borders & Dividers
+val BorderSubtle = Color(0xFF1C1C24)
+val BorderBright = Color(0xFF2C2C34)

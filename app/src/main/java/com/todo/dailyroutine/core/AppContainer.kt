@@ -22,7 +22,6 @@ class AppContainer(private val context: Context) {
     val sessionManager by lazy { SessionManager(context) }
     val db by lazy { AppDatabase.getDatabase(context) }
 
-
     val taskRepository by lazy { 
         TaskRepository(db.taskDao(), sessionManager) 
     }
@@ -39,17 +38,17 @@ class AppContainer(private val context: Context) {
         AiRepository(ApiClient.aiStudioApi, ApiClient.universalAiApi) 
     }
 
-    val aiConfigRepository by lazy { 
-        AiConfigRepository(db.aiConfigDao(), sessionManager) 
+    val chatRepository by lazy {
+        ChatRepository(db.messageDao())
     }
 
     val whisperTranscriptionManager by lazy {
-        WhisperTranscriptionManager(context, aiRepository, aiConfigRepository)
+        WhisperTranscriptionManager(context, aiRepository, sessionManager)
     }
 
     val vectorEngine by lazy { VectorEngine(context) }
     val vectorMemoryManager by lazy { VectorMemoryManager(db.memoryDao(), vectorEngine) }
-    val memoryPipeline by lazy { MemoryPipeline(aiRepository, aiConfigRepository, vectorMemoryManager) }
+    val memoryPipeline by lazy { MemoryPipeline(aiRepository, sessionManager, vectorMemoryManager) }
 
     val journalRepository by lazy {
         JournalRepository(db.journalDao(), db.journalStreakDao(), memoryPipeline)
@@ -94,7 +93,7 @@ class AppContainer(private val context: Context) {
             aiRepository,
             taskRepository,
             habitRepository,
-            aiConfigRepository,
+            sessionManager,
             journalRepository,
             flowScoreRepository,
             voiceToTextManager

@@ -1,269 +1,238 @@
 package com.todo.dailyroutine.ui.screens
 
-import androidx.compose.animation.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.todo.dailyroutine.ui.viewmodel.*
+import androidx.navigation.NavHostController
 import com.todo.dailyroutine.ui.components.*
 import com.todo.dailyroutine.ui.theme.*
+import com.todo.dailyroutine.ui.viewmodel.HomeViewModel
 
 @Composable
-fun DashboardScreen(
-    homeViewModel: HomeViewModel, 
-    aiViewModel: AiViewModel,
-    onNavigateToSearch: () -> Unit,
-    onNavigateToDeepFlow: () -> Unit
-) {
-    val state by homeViewModel.uiState.collectAsState()
-    val aiState by aiViewModel.uiState.collectAsState()
-    
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(BackgroundBase)
-    ) {
+fun DashboardScreen(viewModel: HomeViewModel, navController: NavHostController? = null) {
+    val uiState by viewModel.uiState.collectAsState()
+    var showAddTaskDialog by remember { mutableStateOf(false) }
+    var newTaskTitle by remember { mutableStateOf("") }
+
+    if (showAddTaskDialog) {
+        AlertDialog(
+            onDismissRequest = { showAddTaskDialog = false },
+            containerColor = ObsidianSurface,
+            title = { Text("Quick Add Task", color = TextPrimary) },
+            text = {
+                TextField(
+                    value = newTaskTitle,
+                    onValueChange = { newTaskTitle = it },
+                    placeholder = { Text("What needs to be done?", color = TextMuted) },
+                    colors = TextFieldDefaults.colors(
+                        focusedContainerColor = ObsidianBackground,
+                        unfocusedContainerColor = ObsidianBackground,
+                        focusedTextColor = TextPrimary,
+                        unfocusedTextColor = TextPrimary
+                    )
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    if (newTaskTitle.isNotBlank()) {
+                        viewModel.addTask(newTaskTitle, "General")
+                        newTaskTitle = ""
+                        showAddTaskDialog = false
+                    }
+                }) {
+                    Text("ADD", color = AccentBlue)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showAddTaskDialog = false }) {
+                    Text("CANCEL", color = TextMuted)
+                }
+            }
+        )
+    }
+
+    Scaffold(
+        containerColor = ObsidianBackground
+    ) { padding ->
         LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(16.dp),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(horizontal = 20.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-            // Header
+            item { Spacer(Modifier.height(16.dp)) }
+
+            // Header Section
             item {
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .statusBarsPadding()
-                        .padding(vertical = 12.dp),
+                    modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        FlowLogo(modifier = Modifier.size(56.dp))
-                        Spacer(Modifier.width(12.dp))
-                        Column {
-                            Text("FlowOS", style = Typography.labelMedium, color = AccentPrimary, fontWeight = FontWeight.Bold)
-                            Text("Operational", style = Typography.headlineMedium, color = Color.White)
-                        }
+                    Column {
+                        Text("FlowOS", style = Typography.displayLarge, color = TextPrimary)
+                        Text("Operational Status: Optimal", style = Typography.labelMedium, color = SuccessGreen)
                     }
-                    IconButton(
-                        onClick = onNavigateToSearch,
+                    Box(
                         modifier = Modifier
                             .size(48.dp)
-                            .clip(CircleShape)
-                            .background(SurfaceCard)
-                            .border(1.dp, Color.White.copy(alpha = 0.05f), CircleShape)
+                            .background(ObsidianSurfaceElevated, CircleShape)
+                            .border(1.dp, BorderSubtle, CircleShape),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Icon(Icons.Default.Search, contentDescription = null, tint = Color.White.copy(alpha = 0.7f))
+                        Icon(Icons.Default.Person, contentDescription = null, tint = TextPrimary)
                     }
                 }
             }
 
-            // Neural Action Row
+            // Hero Metric
+            item {
+                GlassCard(
+                    modifier = Modifier.fillMaxWidth(),
+                    backgroundColor = ObsidianSurfaceElevated.copy(alpha = 0.4f)
+                ) {
+                    Column {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("Current Sync", style = Typography.labelSmall, color = TextSecondary)
+                            Spacer(Modifier.width(8.dp))
+                            Box(Modifier.size(8.dp).background(SuccessGreen, CircleShape))
+                        }
+                        Spacer(Modifier.height(8.dp))
+                        Row(verticalAlignment = Alignment.Bottom) {
+                            Text("${uiState.stats.progressPercent}%", style = Typography.displayLarge.copy(fontSize = 56.sp), color = TextPrimary)
+                            Spacer(Modifier.width(12.dp))
+                            Text("Consistency Level: ${uiState.stats.level}", style = Typography.labelMedium, color = AccentBlue, modifier = Modifier.padding(bottom = 12.dp))
+                        }
+                        LinearProgressIndicator(
+                            progress = uiState.stats.progressPercent / 100f,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(4.dp)
+                                .clip(CircleShape),
+                            color = AccentBlue,
+                            trackColor = ObsidianBackground
+                        )
+                    }
+                }
+            }
+
+            // Quick Actions
             item {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    ActionPill(
-                        label = "Daily Protocol",
-                        icon = Icons.Default.AutoMode,
-                        onClick = { aiViewModel.generateDailyProtocol(homeViewModel.taskRepository) },
-                        modifier = Modifier.weight(1f),
-                        isLoading = aiState.protocolLoading
-                    )
-                    ActionPill(
-                        label = "Deep Flow",
-                        icon = Icons.Default.Cyclone,
-                        onClick = onNavigateToDeepFlow,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-            }
-
-            // Core Metrics
-            item {
-                if (state.loading) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        SkeletonCard(modifier = Modifier.weight(1f), height = 110.dp)
-                        SkeletonCard(modifier = Modifier.weight(1f), height = 110.dp)
+                    QuickActionItem("Add Task", Icons.Default.Add, Modifier.weight(1f)) {
+                        showAddTaskDialog = true
                     }
-                } else {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        FlowStatCard(
-                            label = "Sync",
-                            value = "${state.stats.progressPercent}%",
-                            modifier = Modifier.weight(1f),
-                            color = SuccessGreen
-                        )
-                        FlowStatCard(
-                            label = "Flow",
-                            value = "${state.tasks.count { it.completed }}/${state.tasks.size}",
-                            modifier = Modifier.weight(1f),
-                            color = AccentPrimary
-                        )
+                    QuickActionItem("Oracle", Icons.Default.AutoAwesome, Modifier.weight(1f)) {
+                        navController?.navigate("oracle")
                     }
-                }
-            }
-
-            // Brain State Visualization
-            item {
-                Surface(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(280.dp),
-                    shape = RoundedCornerShape(32.dp),
-                    color = SurfaceCard,
-                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.05f))
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        BrainStateOrb(
-                            flowScore = state.stats.progressPercent,
-                            syncProgress = state.stats.progressPercent / 100f,
-                            flowHoursProgress = 0.7f,
-                            vibeProgress = 0.8f,
-                            modifier = Modifier.size(220.dp)
-                        )
+                    QuickActionItem("Journal", Icons.Default.EditNote, Modifier.weight(1f)) {
+                        navController?.navigate("journal")
                     }
                 }
             }
 
             // Oracle Insight
             item {
-                if (state.loading) {
-                    SkeletonCard(height = 100.dp)
-                } else if (state.oracleInsight != null) {
-                    Surface(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(24.dp),
-                        color = SuccessGreen.copy(alpha = 0.1f),
-                        border = BorderStroke(1.dp, SuccessGreen.copy(alpha = 0.2f))
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(20.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(Icons.Default.Cyclone, contentDescription = null, tint = SuccessGreen)
-                            Spacer(Modifier.width(16.dp))
-                            Column {
-                                Text("Oracle Insight", style = Typography.labelMedium, color = SuccessGreen)
-                                Text(state.oracleInsight!!, style = Typography.bodyLarge, fontWeight = FontWeight.Medium, color = Color.White)
-                            }
+                GlassCard(
+                    backgroundColor = AccentBlue.copy(alpha = 0.05f),
+                    borderColor = AccentBlue.copy(alpha = 0.2f)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = AccentBlue, modifier = Modifier.size(24.dp))
+                        Spacer(Modifier.width(16.dp))
+                        Column {
+                            Text("Oracle Insight", style = Typography.labelSmall, color = AccentBlue)
+                            Text(uiState.oracleInsight ?: "Analyzing execution patterns...", style = Typography.bodyMedium)
                         }
                     }
                 }
             }
-            
-            item { Spacer(Modifier.height(80.dp)) }
-        }
 
-        // Daily Protocol Overlay
-        aiState.dailyProtocol?.let { protocol ->
-            DailyProtocolOverlay(
-                protocol = protocol,
-                onDismiss = { /* Optionally clear protocol */ },
-                onApply = { aiViewModel.applyProtocol(homeViewModel.taskRepository) }
-            )
-        }
+            // Task Queue Preview
+            item {
+                SectionHeader(title = "Task Queue", actionLabel = "View All", onActionClick = {
+                    navController?.navigate("flow")
+                })
+            }
 
-        CelebrationOverlay(
-            isVisible = state.celebrationMessage != null,
-            message = state.celebrationMessage ?: ""
-        )
-    }
-}
-
-@Composable
-fun ActionPill(
-    label: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    isLoading: Boolean = false
-) {
-    Surface(
-        modifier = modifier.clickable { if (!isLoading) onClick() },
-        shape = RoundedCornerShape(20.dp),
-        color = SurfaceCard,
-        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.05f))
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
-        ) {
-            if (isLoading) {
-                CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp, color = AccentPrimary)
+            val pendingTasks = uiState.tasks.filter { !it.completed }.take(3)
+            if (pendingTasks.isEmpty()) {
+                item {
+                    Text("No pending tasks. Protocol satisfied.", color = TextMuted, style = Typography.labelMedium)
+                }
             } else {
-                Icon(icon, contentDescription = null, tint = AccentPrimary, modifier = Modifier.size(18.dp))
+                items(pendingTasks) { task ->
+                    DashboardTaskRow(task.title, task.category, task.completed) {
+                        viewModel.toggleTask(task)
+                    }
+                }
             }
-            Spacer(Modifier.width(10.dp))
-            Text(label, style = Typography.labelLarge, color = Color.White)
+
+            item { Spacer(Modifier.height(120.dp)) }
         }
     }
 }
 
 @Composable
-fun DailyProtocolOverlay(
-    protocol: DailyProtocol,
-    onDismiss: () -> Unit,
-    onApply: () -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        containerColor = BackgroundBase,
-        tonalElevation = 8.dp,
-        title = {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.AutoMode, contentDescription = null, tint = AccentPrimary)
-                Spacer(Modifier.width(12.dp))
-                Text("Proposed Protocol", color = Color.White)
-            }
-        },
-        text = {
-            Column {
-                Text(protocol.summary, color = TextSecondary, style = Typography.bodyMedium)
-                Spacer(Modifier.height(20.dp))
-                LazyColumn(modifier = Modifier.heightIn(max = 300.dp)) {
-                    items(protocol.actions.size) { index ->
-                        val action = protocol.actions[index]
-                        Column(modifier = Modifier.padding(vertical = 8.dp)) {
-                            Text(action.title, color = Color.White, fontWeight = FontWeight.Bold)
-                            Text("${action.suggestedTimeBlock}: ${action.reasoning}", color = TextSecondary, style = Typography.labelSmall)
-                        }
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            Button(onClick = onApply, colors = ButtonDefaults.buttonColors(containerColor = AccentPrimary)) {
-                Text("Apply Strategy")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Dismiss", color = TextSecondary)
-            }
-        },
-        shape = RoundedCornerShape(32.dp)
-    )
+fun QuickActionItem(label: String, icon: ImageVector, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = modifier
+            .clip(RoundedCornerShape(20.dp))
+            .background(ObsidianSurface)
+            .clickable { onClick() }
+            .padding(vertical = 16.dp)
+    ) {
+        Icon(icon, contentDescription = null, tint = AccentBlue, modifier = Modifier.size(24.dp))
+        Spacer(Modifier.height(8.dp))
+        Text(label, style = Typography.labelSmall, color = TextPrimary)
+    }
+}
+
+@Composable
+fun DashboardTaskRow(title: String, category: String, completed: Boolean, onToggle: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(ObsidianSurface)
+            .clickable { onToggle() }
+            .padding(16.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(20.dp)
+                .clip(CircleShape)
+                .border(2.dp, if (completed) SuccessGreen else BorderSubtle, CircleShape)
+                .background(if (completed) SuccessGreen else Color.Transparent),
+            contentAlignment = Alignment.Center
+        ) {
+            if (completed) Icon(Icons.Default.Check, contentDescription = null, tint = ObsidianBackground, modifier = Modifier.size(14.dp))
+        }
+        Spacer(Modifier.width(16.dp))
+        Column {
+            Text(title, style = Typography.titleMedium, color = if (completed) TextMuted else TextPrimary)
+            Text(category, style = Typography.labelSmall, color = TextSecondary)
+        }
+    }
 }

@@ -1,14 +1,14 @@
 package com.todo.dailyroutine.domain.vector
 
 import com.todo.dailyroutine.data.repository.AiRepository
-import com.todo.dailyroutine.data.repository.AiConfigRepository
+import com.todo.dailyroutine.data.session.SessionManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 
 class MemoryPipeline(
     private val aiRepository: AiRepository,
-    private val aiConfigRepository: AiConfigRepository,
+    private val sessionManager: SessionManager,
     private val vectorMemoryManager: VectorMemoryManager
 ) {
     
@@ -16,7 +16,7 @@ class MemoryPipeline(
      * Processes user input through AI classification and system validation.
      */
     suspend fun processAndStore(userId: String, input: String) = withContext(Dispatchers.IO) {
-        val config = aiConfigRepository.getActiveConfig() ?: return@withContext
+        val config = sessionManager.getAiConfig()
         
         // 1. AI Classification with Structured Output
         val classificationPrompt = """
@@ -25,7 +25,6 @@ class MemoryPipeline(
             
             Rules:
             - Store if it's a fact about the user, a preference, or a clear goal.
-            - Do not store casual conversation or greetings.
             - Return ONLY a JSON object.
             
             JSON Structure:
@@ -48,26 +47,14 @@ class MemoryPipeline(
                 shouldStore = json.getBoolean("shouldStore")
             )
         } catch (e: Exception) {
-            // Fallback: handle cases where LLM might still wrap in markdown or return invalid format
-            try {
-                val cleaned = aiResponse.substringAfter("{").substringBeforeLast("}") + "}"
-                val json = JSONObject(cleaned)
-                MemoryInsight(
-                    text = json.getString("text"),
-                    type = json.getString("type"),
-                    importance = json.getDouble("importance").toFloat(),
-                    shouldStore = json.getBoolean("shouldStore")
-                )
-            } catch (e2: Exception) {
-                null
-            }
+            null
         } ?: return@withContext
 
         // 2. System Validation (Hard Rules)
         if (!classification.shouldStore) return@withContext
         if (classification.text.length < 5) return@withContext
         
-        // 3. Storage (includes deduplication)
+        // 3. Storage
         vectorMemoryManager.storeMemory(
             userId = userId,
             text = classification.text,

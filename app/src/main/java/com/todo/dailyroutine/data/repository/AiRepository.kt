@@ -17,9 +17,12 @@ import okhttp3.RequestBody.Companion.asRequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.callbackFlow
 import java.io.BufferedReader
 import java.io.InputStreamReader
+import com.todo.dailyroutine.data.ai.ProviderDetector
+import com.todo.dailyroutine.data.ai.ProviderFactory
+import com.todo.dailyroutine.data.ai.UniversalAIProvider
+import kotlinx.coroutines.flow.flowOn
 
 class AiRepository(
     private val aiApi: AiStudioApi,
@@ -27,358 +30,104 @@ class AiRepository(
 ) {
     private val gson = Gson()
 
-    fun detectProvider(apiKey: String): String {
-        return when {
-            apiKey.startsWith("sk-ant-") -> "Anthropic"
-            apiKey.startsWith("sk-") -> "OpenAI"
-            apiKey.startsWith("gsk_") -> "Groq"
-            apiKey.startsWith("nvapi-") -> "Nvidia"
-            apiKey.startsWith("AIza") -> "Google"
-            else -> "Custom" // Default to Custom/Universal
-        }
-    }
-
     /**
-     * Fetches available models for a given provider.
+     * Detects provider and fetches available models for a given API key.
      */
-    suspend fun fetchModels(config: UserApiConfig): List<String> = withContext(Dispatchers.IO) {
-        val provider = if (config.providerName != "Custom") config.providerName.lowercase() else detectProvider(config.apiKey).lowercase()
-        val headers = mutableMapOf<String, String>()
+    suspend fun detectProviderAndModels(apiKey: String): Pair<AiProviderConfig, List<ModelInfo>>? = withContext(Dispatchers.IO) {
+        val input = apiKey.trim()
+        val providerId = ProviderDetector.detect(input) ?: return@withContext null
         
-        when (provider) {
-            "openai" -> headers["Authorization"] = "Bearer ${config.apiKey}"
-            "anthropic" -> {
-                headers["x-api-key"] = config.apiKey
-                headers["anthropic-version"] = "2023-06-01"
-            }
-            "groq" -> headers["Authorization"] = "Bearer ${config.apiKey}"
-            "nvidia" -> headers["Authorization"] = "Bearer ${config.apiKey}"
-            "google" -> return@withContext listOf("gemini-1.5-flash", "gemini-1.5-pro")
-        }
-
-        val url = when (provider) {
-            "openai" -> "https://api.openai.com/v1/models"
-            "anthropic" -> "https://api.anthropic.com/v1/models" // Anthropic doesn't have a public models endpoint like OpenAI, usually hardcoded
-            "groq" -> "https://api.groq.com/openai/v1/models"
-            "nvidia" -> "https://integrate.api.nvidia.com/v1/models"
-            else -> ""
-        }
-
-        if (url.isEmpty() || provider == "anthropic") {
-            return@withContext getHardcodedModels(provider)
-        }
-
-        try {
-            val response = universalAiApi.getModels(url, headers)
-            if (response.isSuccessful) {
-                val raw = response.body()?.string() ?: ""
-                val json = JSONObject(raw)
-                val data = json.getJSONArray("data")
-                val models = mutableListOf<String>()
-                for (i in 0 until data.length()) {
-                    models.add(data.getJSONObject(i).getString("id"))
-                }
-                return@withContext models.filter { it.contains("gpt") || it.contains("claude") || it.contains("llama") || it.contains("mixtral") }
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-        
-        return@withContext getHardcodedModels(provider)
-    }
-
-    private fun getHardcodedModels(provider: String): List<String> {
-        return when (provider) {
-            "openai" -> listOf("gpt-4o", "gpt-4-turbo", "gpt-3.5-turbo")
-            "anthropic" -> listOf("claude-3-5-sonnet-20240620", "claude-3-opus-20240229", "claude-3-haiku-20240307")
-            "groq" -> listOf("llama3-70b-8192", "llama3-8b-8192", "mixtral-8x7b-32768")
-            "nvidia" -> listOf("meta/llama3-70b-instruct", "mistralai/mixtral-8x7b-instruct-v0.1")
-            "google" -> listOf("gemini-1.5-flash", "gemini-1.5-pro")
-            else -> listOf("gpt-3.5-turbo")
-        }
-    }
-
-    suspend fun generateWithDynamicConfig(
-        config: UserApiConfig,
-        prompt: String,
-        systemPrompt: String? = null,
-        tools: List<Map<String, Any>>? = null,
-        jsonMode: Boolean = false
-    ): Result<String> = runCatching {
-        val headers = mutableMapOf<String, String>()
-        val provider = if (config.providerName != "Custom") config.providerName.lowercase() else detectProvider(config.apiKey).lowercase()
-        
-        when (provider) {
-            "anthropic" -> {
-                headers["x-api-key"] = config.apiKey
-                headers["anthropic-version"] = "2023-06-01"
-            }
-            else -> {
-                headers["Authorization"] = "Bearer ${config.apiKey}"
-            }
-        }
-
-        headers["Content-Type"] = "application/json"
-
-        val messages = mutableListOf<Map<String, String>>()
-        if (systemPrompt != null) {
-            messages.add(mapOf("role" to "system", "content" to systemPrompt))
-        }
-        messages.add(mapOf("role" to "user", "content" to prompt))
-
-        val body = mutableMapOf<String, Any>(
-            "model" to (config.model ?: getHardcodedModels(provider)[0]),
-            "messages" to messages
-        )
-
-        if (tools != null) {
-            body["tools"] = tools
-            body["tool_choice"] = "auto"
-        }
-
-        if (jsonMode && provider != "anthropic") {
-            body["response_format"] = mapOf("type" to "json_object")
-        }
-
-        val baseUrl = if (config.baseUrl.isNotBlank()) config.baseUrl else when(provider) {
-            "openai" -> "https://api.openai.com/v1/chat/completions"
-            "anthropic" -> "https://api.anthropic.com/v1/messages"
-            "groq" -> "https://api.groq.com/openai/v1/chat/completions"
-            "nvidia" -> "https://integrate.api.nvidia.com/v1/chat/completions"
-            else -> "https://api.openai.com/v1/chat/completions"
-        }
-
-        val response = universalAiApi.genericChat(baseUrl, headers, body)
-        if (!response.isSuccessful) {
-            throw Exception("AI Provider Error (${response.code()}): ${response.errorBody()?.string()}")
-        }
-
-        response.body()?.string() ?: ""
-    }
-
-    suspend fun chat(
-        prompt: String, 
-        activeConfig: UserApiConfig? = null, 
-        systemPrompt: String? = null,
-        tools: List<Map<String, Any>>? = null,
-        jsonMode: Boolean = false
-    ): Result<String> = runCatching {
-        if (activeConfig != null) {
-            generateWithDynamicConfig(activeConfig, prompt, systemPrompt, tools, jsonMode).getOrThrow()
+        val baseUrl = if (input.startsWith("http")) {
+            input // The input is the URL itself for local providers
         } else {
-            // Use Google Gemini as default if no config provided
-            val response = aiApi.generatePlan(
-                apiKey = BuildConfig.AI_STUDIO_API_KEY,
-                body = AiRequest(
-                    contents = listOf(
-                        AiContent(parts = listOf(AiPart(text = (systemPrompt ?: "") + "\n\n" + prompt)))
-                    )
-                )
-            )
-            response.candidates?.firstOrNull()?.content?.parts?.firstOrNull()?.text.orEmpty()
+            ProviderDetector.getBaseUrl(providerId)
+        }
+        
+        val provider = ProviderFactory.getProvider(providerId, universalAiApi)
+        val providerName = provider.name
+        
+        val config = AiProviderConfig(
+            providerId = providerId,
+            providerName = providerName,
+            apiKey = if (input.startsWith("http")) "" else input,
+            baseUrl = baseUrl
+        )
+        
+        val models = fetchModels(config)
+        if (models.isNotEmpty()) {
+            config to models
+        } else {
+            null
         }
     }
 
     /**
-     * Streams AI responses in real-time.
+     * Fetches available models for a given provider config.
      */
-    fun chatStream(
-        prompt: String,
-        activeConfig: UserApiConfig? = null,
-        systemPrompt: String? = null
-    ): Flow<String> = flow {
-        val config = activeConfig ?: return@flow
-        val provider = if (config.providerName != "Custom") config.providerName.lowercase() else detectProvider(config.apiKey).lowercase()
-        val headers = mutableMapOf<String, String>()
-        
-        when (provider) {
-            "anthropic" -> {
-                headers["x-api-key"] = config.apiKey
-                headers["anthropic-version"] = "2023-06-01"
-            }
-            else -> headers["Authorization"] = "Bearer ${config.apiKey}"
-        }
-        headers["Content-Type"] = "application/json"
-        headers["Accept"] = "text/event-stream"
-
-        val messages = mutableListOf<Map<String, String>>()
-        if (systemPrompt != null) {
-            messages.add(mapOf("role" to "system", "content" to systemPrompt))
-        }
-        messages.add(mapOf("role" to "user", "content" to prompt))
-
-        val body = mutableMapOf<String, Any>(
-            "model" to (config.model ?: getHardcodedModels(provider)[0]),
-            "messages" to messages,
-            "stream" to true
-        )
-
-        val baseUrl = if (config.baseUrl.isNotBlank()) config.baseUrl else when(provider) {
-            "openai" -> "https://api.openai.com/v1/chat/completions"
-            "anthropic" -> "https://api.anthropic.com/v1/messages"
-            "groq" -> "https://api.groq.com/openai/v1/chat/completions"
-            "nvidia" -> "https://integrate.api.nvidia.com/v1/chat/completions"
-            else -> "https://api.openai.com/v1/chat/completions"
-        }
-
+    suspend fun fetchModels(config: AiProviderConfig): List<ModelInfo> = withContext(Dispatchers.IO) {
+        val provider = ProviderFactory.getProvider(config.providerId, universalAiApi)
         try {
-            val response = universalAiApi.genericChat(baseUrl, headers, body)
-            if (response.isSuccessful) {
-                val input = response.body()?.byteStream() ?: return@flow
-                val reader = BufferedReader(InputStreamReader(input))
-                
-                reader.useLines { lines ->
-                    lines.forEach { line ->
-                        if (line.startsWith("data: ")) {
-                            val data = line.substring(6).trim()
-                            if (data == "[DONE]") return@forEach
-                            
-                            try {
-                                val json = JSONObject(data)
-                                val content = when (provider) {
-                                    "anthropic" -> {
-                                        if (json.has("delta") && json.getJSONObject("delta").has("text")) {
-                                            json.getJSONObject("delta").getString("text")
-                                        } else ""
-                                    }
-                                    else -> {
-                                        val choices = json.getJSONArray("choices")
-                                        val delta = choices.getJSONObject(0).getJSONObject("delta")
-                                        if (delta.has("content")) delta.getString("content") else ""
-                                    }
-                                }
-                                if (content.isNotEmpty()) {
-                                    emit(content)
-                                }
-                            } catch (e: Exception) {
-                                // Skip malformed chunks
-                            }
-                        }
-                    }
-                }
-            }
+            provider.fetchModels(config)
         } catch (e: Exception) {
             e.printStackTrace()
+            emptyList()
         }
     }
 
-    suspend fun generateNextBestAction(
-        tasks: List<TaskItem>,
-        habits: List<HabitItem>,
-        level: String,
-        xp: Int
-    ): Result<String> = runCatching {
-        val prompt = """
-            You are an execution-first coach.
-            Tasks: ${tasks.joinToString { it.title }}
-            Habits: ${habits.joinToString { it.name }}
-            Level: $level, XP: $xp
-            Give one short mobile-friendly line: "Next best action: ..."
-        """.trimIndent()
-        chat(prompt).getOrThrow()
-    }
     /**
      * Verifies if the API key and endpoint are functional.
      */
-    suspend fun testConnection(config: UserApiConfig): Result<Boolean> = withContext(Dispatchers.IO) {
+    suspend fun testConnection(config: AiProviderConfig): Result<Boolean> = withContext(Dispatchers.IO) {
+        val provider = ProviderFactory.getProvider(config.providerId, universalAiApi)
         try {
-            val models = fetchModels(config)
-            Result.success(models.isNotEmpty())
+            Result.success(provider.testConnection(config))
         } catch (e: Exception) {
             Result.failure(e)
         }
     }
 
-    fun extractContent(raw: String, apiKey: String): String {
-        val provider = detectProvider(apiKey).lowercase()
-        return try {
-            val json = JSONObject(raw)
-            when (provider) {
-                "anthropic" -> {
-                    val content = json.getJSONArray("content")
-                    val sb = StringBuilder()
-                    for (i in 0 until content.length()) {
-                        val part = content.getJSONObject(i)
-                        if (part.getString("type") == "text") {
-                            sb.append(part.getString("text"))
-                        }
-                    }
-                    sb.toString()
-                }
-                else -> {
-                    val choices = json.getJSONArray("choices")
-                    val message = choices.getJSONObject(0).getJSONObject("message")
-                    if (message.has("content") && !message.isNull("content")) {
-                        message.getString("content")
-                    } else ""
-                }
-            }
-        } catch (e: Exception) {
-            raw
-        }
+    suspend fun generateWithDynamicConfig(
+        config: AiProviderConfig,
+        prompt: String,
+        systemPrompt: String? = null,
+        tools: List<Map<String, Any>>? = null,
+        jsonMode: Boolean = false
+    ): Result<String> = runCatching {
+        val provider = ProviderFactory.getProvider(config.providerId, universalAiApi)
+        provider.chat(config, prompt, systemPrompt, tools, jsonMode).getOrThrow()
     }
 
-    fun extractToolCalls(raw: String, apiKey: String): List<AiToolCall> {
-        val provider = detectProvider(apiKey).lowercase()
-        val toolCalls = mutableListOf<AiToolCall>()
-        try {
-            val json = JSONObject(raw)
-            
-            if (provider == "anthropic") {
-                val content = json.getJSONArray("content")
-                for (i in 0 until content.length()) {
-                    val part = content.getJSONObject(i)
-                    if (part.getString("type") == "tool_use") {
-                        toolCalls.add(AiToolCall(
-                            id = part.getString("id"),
-                            type = "function",
-                            function = AiFunctionCall(
-                                name = part.getString("name"),
-                                arguments = part.getJSONObject("input").toString()
-                            )
-                        ))
-                    }
-                }
+    suspend fun chat(
+        prompt: String, 
+        activeConfig: AiProviderConfig? = null, 
+        systemPrompt: String? = null,
+        tools: List<Map<String, Any>>? = null,
+        jsonMode: Boolean = false
+    ): Result<String> = withContext(Dispatchers.IO) {
+        runCatching {
+            if (activeConfig != null) {
+                generateWithDynamicConfig(activeConfig, prompt, systemPrompt, tools, jsonMode).getOrThrow()
             } else {
-                val choices = json.getJSONArray("choices")
-                val message = choices.getJSONObject(0).getJSONObject("message")
-                
-                if (message.has("tool_calls")) {
-                    val calls = message.getJSONArray("tool_calls")
-                    for (i in 0 until calls.length()) {
-                        val call = calls.getJSONObject(i)
-                        val function = call.getJSONObject("function")
-                        toolCalls.add(AiToolCall(
-                            id = call.getString("id"),
-                            type = call.getString("type"),
-                            function = AiFunctionCall(
-                                name = function.getString("name"),
-                                arguments = function.getString("arguments")
-                            )
-                        ))
-                    }
-                }
+                throw Exception("No active AI configuration")
             }
-        } catch (e: Exception) {
-            e.printStackTrace()
         }
-        return toolCalls
     }
 
-    suspend fun transcribeAudio(file: java.io.File, config: UserApiConfig?): Result<String> = withContext(Dispatchers.IO) {
+    fun chatStream(
+        prompt: String,
+        activeConfig: AiProviderConfig? = null,
+        systemPrompt: String? = null
+    ): Flow<String> {
+        val config = activeConfig ?: return flow { emit("Error: No configuration") }
+        val provider = ProviderFactory.getProvider(config.providerId, universalAiApi)
+        return provider.chatStream(config, prompt, systemPrompt)
+            .flowOn(Dispatchers.IO)
+    }
+
+    suspend fun transcribeAudio(file: java.io.File, config: AiProviderConfig?): Result<String> = withContext(Dispatchers.IO) {
         val activeConfig = config ?: return@withContext Result.failure(Exception("No API config for transcription"))
-        val provider = detectProvider(activeConfig.apiKey).lowercase()
         
-        if (provider != "openai" && provider != "groq") {
-            return@withContext Result.failure(Exception("Transcription not supported for $provider"))
-        }
-
-        val url = when(provider) {
-            "openai" -> "https://api.openai.com/v1/audio/transcriptions"
-            "groq" -> "https://api.groq.com/openai/v1/audio/transcriptions"
-            else -> "https://api.openai.com/v1/audio/transcriptions"
-        }
-
+        val url = if (activeConfig.baseUrl.isNotBlank()) "${activeConfig.baseUrl.removeSuffix("/")}/audio/transcriptions" else "https://api.openai.com/v1/audio/transcriptions"
         val headers = mapOf("Authorization" to "Bearer ${activeConfig.apiKey}")
         
         val mediaType = "audio/*".toMediaTypeOrNull()
@@ -415,7 +164,7 @@ class AiRepository(
     suspend fun parseIntentWithContext(
         input: String, 
         context: SystemContext,
-        activeConfig: UserApiConfig?
+        activeConfig: AiProviderConfig?
     ): Result<ParsedIntent> = runCatching {
         val systemPrompt = """
             You are the Jarvis AI core of FlowOS. 
@@ -423,12 +172,10 @@ class AiRepository(
             ${formatSystemContext(context)}
             
             Based on this context and the user's input, parse their intent.
-            If the user says "do it", refer to the most relevant pending task or suggestion.
         """.trimIndent()
         
         val prompt = """
             Input: "$input"
-            
             Return ONLY a JSON object:
             {
               "type": "task" | "habit" | "search" | "action",
@@ -453,24 +200,34 @@ class AiRepository(
         )
     }
 
-    suspend fun parseIntent(input: String, activeConfig: UserApiConfig?): Result<ParsedIntent> = runCatching {
+    suspend fun generateNextBestAction(
+        tasks: List<TaskItem>,
+        habits: List<HabitItem>,
+        level: String,
+        xp: Int,
+        config: AiProviderConfig?
+    ): Result<String> = runCatching {
         val prompt = """
-            Parse the following user input into a Task, Habit, or Search intent for FlowOS.
-            Input: "$input"
-            
-            Guidelines:
-            - If it sounds like a one-off action ("Buy milk", "Email Joe"), type is "task".
-            - If it sounds like a recurring activity ("Gym daily", "Meditate every morning"), type is "habit".
-            - If it sounds like a query about past data ("What did I do last Monday?", "Find my notes on project X"), type is "search".
-            
-            Return ONLY a JSON object:
+            You are an execution-first coach.
+            Tasks: ${tasks.joinToString { it.title }}
+            Habits: ${habits.joinToString { it.name }}
+            Level: $level, XP: $xp
+            Give one short mobile-friendly line: "Next best action: ..."
+        """.trimIndent()
+        chat(prompt, activeConfig = config).getOrThrow()
+    }
+
+    suspend fun parseIntent(input: String, activeConfig: AiProviderConfig?): Result<ParsedIntent> = runCatching {
+        val prompt = """
+            Parse input: "$input"
+            Return ONLY JSON:
             {
               "type": "task" | "habit" | "search",
-              "title": "The cleaned title",
+              "title": "Title",
               "category": "Work" | "Personal" | "Health" | "Finance" | "Social" | "Other",
               "timeBlock": "Morning" | "Deep Work" | "Evening" | "Night" | null,
               "isRecurring": boolean,
-              "searchQuery": "if type is search"
+              "searchQuery": "search"
             }
         """.trimIndent()
         

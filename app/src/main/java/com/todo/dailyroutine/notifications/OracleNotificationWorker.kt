@@ -8,7 +8,7 @@ import androidx.work.WorkerParameters
 import kotlinx.coroutines.flow.first
 import com.todo.dailyroutine.DailyRoutineApp
 import com.todo.dailyroutine.R
-import com.todo.dailyroutine.data.model.UserApiConfig
+import com.todo.dailyroutine.data.model.AiProviderConfig
 import com.todo.dailyroutine.data.repository.AiRepository
 import com.todo.dailyroutine.data.repository.TaskRepository
 import com.todo.dailyroutine.data.repository.HabitRepository
@@ -25,6 +25,7 @@ class OracleNotificationWorker(
         val aiRepository = container.aiRepository
         val taskRepo = container.taskRepository
         val habitRepo = container.habitRepository
+        val config = container.sessionManager.getAiConfig()
         
         // Fetch current state for AI context
         val pendingTasks = taskRepo.tasks.first().filter { !it.completed }
@@ -36,7 +37,7 @@ class OracleNotificationWorker(
             Target channel: ${inputData.getString("channel") ?: "General"}
         """.trimIndent()
         
-        val nudge = aiRepository.chat(prompt).getOrNull() ?: "Protocol check: synchronization required."
+        val nudge = aiRepository.chat(prompt, activeConfig = config).getOrNull() ?: "Protocol check: synchronization required."
         
         showNotification(
             inputData.getString("channel") ?: FlowNotificationEngine.CHANNEL_GENERAL,
@@ -49,13 +50,17 @@ class OracleNotificationWorker(
 
     private fun showNotification(channelId: String, title: String, body: String) {
         val notification = NotificationCompat.Builder(applicationContext, channelId)
-            .setSmallIcon(R.drawable.ic_launcher_foreground) // Use app icon
+            .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setContentTitle(title)
             .setContentText(body)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
             .build()
             
-        NotificationManagerCompat.from(applicationContext).notify(System.currentTimeMillis().toInt(), notification)
+        try {
+            NotificationManagerCompat.from(applicationContext).notify(System.currentTimeMillis().toInt(), notification)
+        } catch (e: SecurityException) {
+            // Handle notification permission issue if necessary
+        }
     }
 }

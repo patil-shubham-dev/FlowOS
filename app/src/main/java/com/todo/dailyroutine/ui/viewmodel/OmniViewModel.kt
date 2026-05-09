@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.todo.dailyroutine.data.model.ParsedIntent
 import com.todo.dailyroutine.data.repository.*
+import com.todo.dailyroutine.data.session.SessionManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -27,7 +28,7 @@ class OmniViewModel(
     private val aiRepository: AiRepository,
     private val taskRepository: TaskRepository,
     private val habitRepository: HabitRepository,
-    private val aiConfigRepository: AiConfigRepository,
+    private val sessionManager: SessionManager,
     private val journalRepository: JournalRepository,
     private val flowScoreRepository: FlowScoreRepository,
     private val voiceManager: VoiceToTextManager
@@ -71,7 +72,7 @@ class OmniViewModel(
 
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isProcessing = true)
-            val config = aiConfigRepository.getActiveConfig()
+            val config = sessionManager.getAiConfig()
             
             // Build Context
             val context = buildSystemContext()
@@ -114,7 +115,7 @@ class OmniViewModel(
                 )
             },
             flowScore = score?.score ?: 0,
-            userLevel = "Vanguard", // Placeholder
+            userLevel = "Vanguard",
             currentTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm, EEE dd MMM")),
             recentMoods = journals.take(5).map { it.rating.toString() }
         )
@@ -136,8 +137,7 @@ class OmniViewModel(
                 )
             }
             "search" -> {
-                // Search is handled by the Search UI, but we could trigger a navigation here
-                // For now, just logging it
+                // Search handled by search UI
             }
         }
     }
@@ -147,7 +147,7 @@ class OmniViewModelFactory(
     private val aiRepository: AiRepository,
     private val taskRepository: TaskRepository,
     private val habitRepository: HabitRepository,
-    private val aiConfigRepository: AiConfigRepository,
+    private val sessionManager: SessionManager,
     private val journalRepository: JournalRepository,
     private val flowScoreRepository: FlowScoreRepository,
     private val voiceManager: VoiceToTextManager
@@ -158,7 +158,7 @@ class OmniViewModelFactory(
             aiRepository, 
             taskRepository, 
             habitRepository, 
-            aiConfigRepository,
+            sessionManager,
             journalRepository,
             flowScoreRepository,
             voiceManager

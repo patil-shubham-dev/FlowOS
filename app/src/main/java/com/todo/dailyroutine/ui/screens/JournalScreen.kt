@@ -2,6 +2,8 @@ package com.todo.dailyroutine.ui.screens
 
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -9,308 +11,216 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.mohamedrejeb.richeditor.model.RichTextState
-import com.mohamedrejeb.richeditor.ui.material3.RichTextEditor
-import com.mohamedrejeb.richeditor.ui.material3.RichTextEditorDefaults
-import com.todo.dailyroutine.ui.viewmodel.*
+import androidx.compose.ui.unit.sp
 import com.todo.dailyroutine.ui.components.*
 import com.todo.dailyroutine.ui.theme.*
-import com.todo.dailyroutine.ui.utils.shimmerEffect
-import kotlinx.coroutines.launch
+import com.todo.dailyroutine.ui.viewmodel.HomeViewModel
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun JournalScreen(viewModel: JournalViewModel) {
-    val entries by viewModel.entries.collectAsState()
-    val isEnhancing by viewModel.isEnhancing.collectAsState()
-    val streak by viewModel.streak.collectAsState()
-    val isVoiceListening by viewModel.isVoiceListening.collectAsState()
-    val voiceText by viewModel.voiceText.collectAsState()
-    val richTextState = remember { RichTextState() }
+fun JournalScreen(viewModel: HomeViewModel) {
+    val uiState by viewModel.uiState.collectAsState()
+    var showAddDialog by remember { mutableStateOf(false) }
+    var reflectionText by remember { mutableStateOf("") }
+    var rating by remember { mutableIntStateOf(7) }
 
-    LaunchedEffect(voiceText) {
-        if (voiceText.isNotEmpty()) {
-            viewModel.enhanceEntry(voiceText) { polished ->
-                val currentText = richTextState.toHtml()
-                richTextState.setHtml(currentText + "<p>$polished</p>")
-            }
-        }
-    }
-    var currentRating by remember { mutableIntStateOf(5) }
-    val haptic = LocalHapticFeedback.current
-    val scope = rememberCoroutineScope()
-    var showAiMenu by remember { mutableStateOf(false) }
-    val sheetState = rememberModalBottomSheetState()
-    
-    var selectedMood by remember { mutableStateOf<Mood?>(null) }
-    val aiPrompt = "The Oracle suggests: What's the biggest bottleneck in your current cycle?"
-    var isLoadingEntries by remember { mutableStateOf(true) }
-    val snackbarHostState = remember { SnackbarHostState() }
-
-    LaunchedEffect(Unit) {
-        viewModel.saveEvent.collect {
-            snackbarHostState.showSnackbar("Reflection Synthesized")
-            richTextState.setText("")
-        }
-    }
-
-    LaunchedEffect(entries) {
-        if (entries.isNotEmpty()) isLoadingEntries = false
-    }
-
-    Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        containerColor = Color.Transparent
-    ) { padding ->
-        DashboardScaffold(
-            title = "Reflection",
-            modifier = Modifier.padding(padding)
-        ) {
-        item {
-            JournalStreakHeader(streak = streak)
-        }
-
-        item {
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(28.dp),
-                color = SurfaceCard,
-                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.05f))
-            ) {
-                Column(Modifier.padding(24.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("Current Vibe", style = Typography.titleLarge, color = Color.White)
-                        Spacer(Modifier.weight(1f))
-                        Text("$currentRating/10", style = Typography.headlineLarge, color = AccentPrimary)
-                    }
-                    
+    if (showAddDialog) {
+        AlertDialog(
+            onDismissRequest = { showAddDialog = false },
+            containerColor = ObsidianSurface,
+            title = { Text("Daily Reflection", color = TextPrimary) },
+            text = {
+                Column {
+                    TextField(
+                        value = reflectionText,
+                        onValueChange = { reflectionText = it },
+                        placeholder = { Text("What's on your mind?", color = TextMuted) },
+                        modifier = Modifier.fillMaxWidth().height(120.dp),
+                        colors = TextFieldDefaults.colors(
+                            focusedContainerColor = ObsidianBackground,
+                            unfocusedContainerColor = ObsidianBackground,
+                            focusedTextColor = TextPrimary,
+                            unfocusedTextColor = TextPrimary
+                        )
+                    )
+                    Spacer(Modifier.height(16.dp))
+                    Text("Energy Level: $rating/10", color = TextSecondary, style = Typography.labelMedium)
                     Slider(
-                        value = currentRating.toFloat(),
-                        onValueChange = { currentRating = it.toInt() },
+                        value = rating.toFloat(),
+                        onValueChange = { rating = it.toInt() },
                         valueRange = 1f..10f,
                         steps = 8,
                         colors = SliderDefaults.colors(
-                            thumbColor = AccentPrimary,
-                            activeTrackColor = AccentPrimary,
-                            inactiveTrackColor = TextTertiary
+                            thumbColor = AccentBlue,
+                            activeTrackColor = AccentBlue,
+                            inactiveTrackColor = BorderSubtle
                         )
                     )
-                    
-                    MoodSelector(
-                        selectedMood = selectedMood,
-                        onMoodSelected = { selectedMood = it }
-                    )
-                    
-                    AiJournalPrompt(
-                        prompt = aiPrompt,
-                        onClick = { 
-                            val current = richTextState.toHtml()
-                            richTextState.setHtml(current + "<p><b>Topic:</b> $aiPrompt</p>")
-                        }
-                    )
-                    
-                    Spacer(Modifier.height(16.dp))
-                    
-                    Surface(
-                        modifier = Modifier.fillMaxWidth().heightIn(min = 200.dp),
-                        shape = RoundedCornerShape(24.dp),
-                        color = BackgroundBase,
-                        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.05f))
-                    ) {
-                        Column {
-                            JournalEditorToolbar(
-                                state = richTextState,
-                                onAiClick = { showAiMenu = true }
-                            )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    if (reflectionText.isNotBlank()) {
+                        viewModel.addJournalEntry(reflectionText, rating)
+                        reflectionText = ""
+                        showAddDialog = false
+                    }
+                }) {
+                    Text("SAVE", color = AccentBlue)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showAddDialog = false }) {
+                    Text("CANCEL", color = TextMuted)
+                }
+            }
+        )
+    }
 
-                            RichTextEditor(
-                                state = richTextState,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .weight(1f)
-                                    .background(Color.Transparent),
-                                colors = RichTextEditorDefaults.richTextEditorColors(
-                                    containerColor = Color.Transparent,
-                                    cursorColor = AccentPrimary,
-                                    textColor = Color.White,
-                                    focusedIndicatorColor = Color.Transparent,
-                                    unfocusedIndicatorColor = Color.Transparent
-                                ),
-                                placeholder = { Text("Synthesize your cycles...", color = TextTertiary) }
-                            )
-                            
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(8.dp),
-                                horizontalArrangement = Arrangement.End,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                IconButton(onClick = { 
-                                    if (isVoiceListening) {
-                                        viewModel.stopVoiceRecording { refined ->
-                                            val currentHtml = richTextState.toHtml()
-                                            richTextState.setHtml(currentHtml + "<p>$refined</p>")
-                                            scope.launch {
-                                                snackbarHostState.showSnackbar("Thought Stream Synced")
-                                            }
-                                        }
-                                    } else {
-                                        viewModel.startVoiceRecording()
-                                    }
-                                }) {
-                                    Icon(
-                                        imageVector = Icons.Default.Mic, 
-                                        contentDescription = null, 
-                                        tint = if (isVoiceListening) Color.Red else AccentPrimary
-                                    )
-                                }
-                                IconButton(onClick = { 
-                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                    viewModel.enhanceEntry(richTextState.toHtml()) { enhanced ->
-                                        richTextState.setHtml(enhanced)
-                                    }
-                                }) {
-                                    if (isEnhancing) {
-                                        CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp, color = AccentPrimary)
-                                    } else {
-                                        Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = AccentPrimary)
-                                    }
+    Scaffold(
+        containerColor = ObsidianBackground
+    ) { padding ->
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(horizontal = 20.dp),
+            verticalArrangement = Arrangement.spacedBy(24.dp)
+        ) {
+            item { Spacer(Modifier.height(16.dp)) }
+
+            // Header
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Reflections", style = Typography.headlineLarge)
+                    IconButton(onClick = { showAddDialog = true }) {
+                        Icon(Icons.Default.Add, contentDescription = null, tint = AccentBlue)
+                    }
+                }
+            }
+
+            // Calendar Strip (Simplified)
+            item {
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(7) { i ->
+                        val day = when(i) {
+                            0 -> "M" 1 -> "T" 2 -> "W" 3 -> "T" 4 -> "F" 5 -> "S" else -> "S"
+                        }
+                        CalendarDay(day, "${15 + i}", active = i == 2)
+                    }
+                }
+            }
+
+            // Quick Reflection Prompt
+            item {
+                GlassCard(backgroundColor = AccentBlue.copy(alpha = 0.05f)) {
+                    Column {
+                        Text("Current vibe?", style = Typography.labelMedium, color = AccentBlue)
+                        Spacer(Modifier.height(8.dp))
+                        Text("How are you feeling about your progress today?", style = Typography.titleMedium)
+                        Spacer(Modifier.height(16.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            listOf("⚡ Optimized", "🔋 Neutral", "📉 Low").forEach { mood ->
+                                SuggestionChip(mood) { 
+                                    reflectionText = "Feeling $mood."
+                                    showAddDialog = true 
                                 }
                             }
                         }
                     }
-                    
-                    Spacer(Modifier.height(24.dp))
-                    
-                    PrimaryGradientButton(
-                        text = "Document Reflection",
-                        loading = false,
-                        onClick = { 
-                            viewModel.saveEntry("user", richTextState.toHtml(), currentRating)
-                            richTextState.setText("")
-                        }
+                }
+            }
+
+            // Historical Entries
+            item { SectionHeader(title = "Historical Logs") }
+
+            if (uiState.journalEntries.isEmpty()) {
+                item {
+                    Box(Modifier.fillMaxWidth().padding(vertical = 40.dp), contentAlignment = Alignment.Center) {
+                        Text("No reflections recorded yet.", color = TextMuted, style = Typography.labelMedium)
+                    }
+                }
+            } else {
+                items(uiState.journalEntries.sortedByDescending { it.date }) { entry ->
+                    JournalEntryCard(
+                        date = entry.date,
+                        content = entry.content,
+                        insight = entry.aiInsight ?: "Insight generation pending.",
+                        rating = entry.rating
                     )
                 }
             }
-        }
-        
-        item {
-            Spacer(Modifier.height(24.dp))
-            Text("Synced Journey", style = Typography.titleLarge, color = Color.White)
-        }
 
-        if (isLoadingEntries) {
-            items(5) {
-                SkeletonCard(height = 120.dp)
-                Spacer(Modifier.height(16.dp))
-            }
-        } else {
-            items(entries) { entry ->
-                JournalEntryCard(entry)
-            }
-        }
-
-        item { Spacer(Modifier.height(120.dp)) }
-    }
-        }
-
-    if (showAiMenu) {
-        ModalBottomSheet(
-            onDismissRequest = { showAiMenu = false },
-            sheetState = sheetState,
-            containerColor = SurfaceCard
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(24.dp)
-                    .navigationBarsPadding()
-            ) {
-                Text("AI Neural Processor", style = Typography.titleLarge, color = Color.White)
-                Text("Select an operation to perform on your reflection", style = Typography.labelSmall, color = TextSecondary)
-                
-                Spacer(Modifier.height(24.dp))
-                
-                AiMenuOption(
-                    title = "Refine & Polish",
-                    description = "Professionalize the entry for clarity",
-                    icon = Icons.Default.AutoAwesome,
-                    onClick = {
-                        viewModel.refineEntry(richTextState.toHtml(), JournalViewModel.RefineStyle.PROFESSIONAL) {
-                            richTextState.setHtml(it)
-                            showAiMenu = false
-                        }
-                    }
-                )
-                
-                AiMenuOption(
-                    title = "Condense",
-                    description = "Make it concise and impactful",
-                    icon = Icons.Default.ShortText,
-                    onClick = {
-                        viewModel.refineEntry(richTextState.toHtml(), JournalViewModel.RefineStyle.CONCISE) {
-                            richTextState.setHtml(it)
-                            showAiMenu = false
-                        }
-                    }
-                )
-
-                AiMenuOption(
-                    title = "Extract Action Items",
-                    description = "Identify tasks from your thoughts",
-                    icon = Icons.Default.Bolt,
-                    onClick = {
-                        viewModel.extractActionItems(richTextState.toHtml()) { tasks ->
-                            // In a real app, we'd show a task confirmation dialog here
-                            tasks.forEach { /* Task logic */ }
-                            showAiMenu = false
-                        }
-                    }
-                )
-                
-                Spacer(Modifier.height(32.dp))
-            }
+            item { Spacer(Modifier.height(120.dp)) }
         }
     }
 }
 
 @Composable
-fun AiMenuOption(
-    title: String,
-    description: String,
-    icon: ImageVector,
-    onClick: () -> Unit
-) {
-    Surface(
+fun CalendarDay(day: String, date: String, active: Boolean) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 6.dp)
-            .clickable { onClick() },
-        color = SurfaceElevated,
-        shape = RoundedCornerShape(16.dp),
-        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.03f))
+            .width(48.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(if (active) AccentBlue else ObsidianSurface)
+            .border(1.dp, if (active) AccentBlue else BorderSubtle, RoundedCornerShape(12.dp))
+            .padding(vertical = 12.dp)
     ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier.size(40.dp).background(AccentPrimary.copy(alpha = 0.1f), CircleShape),
-                contentAlignment = Alignment.Center
+        Text(day, style = Typography.labelSmall, color = if (active) ObsidianBackground else TextSecondary)
+        Text(date, style = Typography.titleMedium, color = if (active) ObsidianBackground else TextPrimary, fontWeight = FontWeight.Bold)
+    }
+}
+
+@Composable
+fun JournalEntryCard(date: String, content: String, insight: String, rating: Int) {
+    GlassCard {
+        Column {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(icon, contentDescription = null, tint = AccentPrimary, modifier = Modifier.size(20.dp))
+                Text(date, style = Typography.labelSmall, color = TextSecondary)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.Star, contentDescription = null, tint = WarningYellow, modifier = Modifier.size(12.dp))
+                    Spacer(Modifier.width(4.dp))
+                    Text("$rating/10", style = Typography.labelSmall, color = TextPrimary)
+                }
             }
-            Spacer(Modifier.width(16.dp))
-            Column {
-                Text(title, style = Typography.titleMedium, color = Color.White)
-                Text(description, style = Typography.labelSmall, color = TextSecondary)
+            
+            Spacer(Modifier.height(12.dp))
+            Text(content, style = Typography.bodyMedium, lineHeight = 20.sp)
+            
+            Spacer(Modifier.height(16.dp))
+            
+            // AI Analysis block
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(ObsidianBackground.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
+                    .padding(12.dp)
+            ) {
+                Column {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = AccentBlue, modifier = Modifier.size(14.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text("Oracle Analysis", style = Typography.labelSmall, color = AccentBlue)
+                    }
+                    Spacer(Modifier.height(4.dp))
+                    Text(insight, style = Typography.labelMedium, color = TextSecondary)
+                }
             }
         }
     }
