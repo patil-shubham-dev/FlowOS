@@ -57,35 +57,43 @@ fun AiScreen(viewModel: HomeViewModel) {
         ) {
             Spacer(Modifier.height(16.dp))
 
-            // Header
+            // Header (Immersive)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("Oracle Intelligence", style = Typography.displayLarge.copy(fontSize = 24.sp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("Neural Net", style = Typography.labelMedium, color = TextSecondary)
-                    Icon(Icons.Default.KeyboardArrowDown, contentDescription = null, tint = TextSecondary)
+                Column {
+                    Text("Oracle Intelligence", style = Typography.displaySmall)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(Modifier.size(6.dp).background(AccentCyan, CircleShape))
+                        Spacer(Modifier.width(6.dp))
+                        Text("Protocol: Active Sync", style = Typography.labelMedium, color = TextMuted)
+                    }
+                }
+                Box(
+                    modifier = Modifier
+                        .size(42.dp)
+                        .background(AccentBlue.copy(alpha = 0.1f), CircleShape)
+                        .border(1.dp, AccentBlue.copy(alpha = 0.2f), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(Icons.Default.Tune, contentDescription = null, tint = AccentBlue, modifier = Modifier.size(20.dp))
                 }
             }
             
-            Spacer(Modifier.height(16.dp))
-            
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                StatusChip("Memory Active", SuccessGreen)
-                Text("Protocol: Active", style = Typography.labelMedium, color = TextSecondary)
-            }
-
             Spacer(Modifier.height(24.dp))
 
             // Chat Area
             LazyColumn(
                 state = listState,
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(20.dp)
+                verticalArrangement = Arrangement.spacedBy(24.dp)
             ) {
-                items(uiState.chatHistory) { message ->
+                items(
+                    items = uiState.chatHistory,
+                    key = { it.timestamp }
+                ) { message ->
                     ChatMessageItem(
                         text = message.content,
                         isUser = message.role == "user"
@@ -94,45 +102,32 @@ fun AiScreen(viewModel: HomeViewModel) {
                 
                 if (uiState.isTyping) {
                     item {
-                        val infiniteTransition = rememberInfiniteTransition(label = "pulse")
-                        val opacity by infiniteTransition.animateFloat(
-                            initialValue = 0.4f,
-                            targetValue = 1f,
-                            animationSpec = infiniteRepeatable(
-                                animation = tween(1000, easing = LinearEasing),
-                                repeatMode = RepeatMode.Reverse
-                            ),
-                            label = "opacity"
-                        )
-                        
-                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.alpha(opacity)) {
-                            Box(Modifier.size(32.dp).background(ObsidianSurfaceElevated, CircleShape), contentAlignment = Alignment.Center) {
-                                Icon(Icons.Default.AutoAwesome, contentDescription = null, modifier = Modifier.size(16.dp), tint = AccentBlue)
-                            }
-                            Spacer(Modifier.width(12.dp))
-                            Text("The Oracle is thinking...", style = Typography.labelSmall, color = TextMuted)
-                        }
+                        TypingIndicator()
                     }
                 }
             }
 
-            // Input Bar
-            Column(modifier = Modifier.padding(vertical = 20.dp)) {
+            // Input Bar (Modernized)
+            Column(modifier = Modifier.padding(vertical = 16.dp)) {
                 // Suggestions
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(), 
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Default.ElectricBolt, null, tint = AccentBlue, modifier = Modifier.size(16.dp))
                     SuggestionChip("Optimize day") { viewModel.sendMessage("Optimize my day") }
                     SuggestionChip("Analyze flow") { viewModel.sendMessage("Analyze my flow score") }
-                    SuggestionChip("Reset") { /* Clear history if needed */ }
                 }
                 Spacer(Modifier.height(16.dp))
                 
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(min = 56.dp)
-                        .background(ObsidianSurface, RoundedCornerShape(28.dp))
-                        .border(1.dp, BorderSubtle, RoundedCornerShape(28.dp))
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                        .heightIn(min = 60.dp)
+                        .background(ObsidianSurface, RoundedCornerShape(30.dp))
+                        .border(1.dp, BorderSubtle, RoundedCornerShape(30.dp))
+                        .padding(horizontal = 20.dp, vertical = 10.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     BasicTextField(
@@ -143,20 +138,17 @@ fun AiScreen(viewModel: HomeViewModel) {
                         cursorBrush = SolidColor(AccentBlue),
                         decorationBox = { innerTextField ->
                             if (inputText.isEmpty()) {
-                                Text("Message Oracle...", color = TextMuted, style = Typography.bodyMedium)
+                                Text("Message Oracle Intelligence...", color = TextMuted, style = Typography.bodyMedium)
                             }
                             innerTextField()
                         }
                     )
                     
-                    IconButton(onClick = { /* Voice toggle */ }) {
-                        Icon(Icons.Default.Mic, contentDescription = null, tint = TextSecondary, modifier = Modifier.size(20.dp))
-                    }
-                    
                     Box(
                         modifier = Modifier
-                            .size(36.dp)
-                            .background(if (inputText.isNotBlank()) AccentBlue else ObsidianSurfaceElevated, CircleShape)
+                            .size(40.dp)
+                            .clip(CircleShape)
+                            .background(if (inputText.isNotBlank()) AccentBlue else ObsidianSurfaceElevated)
                             .clickable(enabled = inputText.isNotBlank()) {
                                 viewModel.sendMessage(inputText)
                                 inputText = ""
@@ -174,6 +166,37 @@ fun AiScreen(viewModel: HomeViewModel) {
 }
 
 @Composable
+fun TypingIndicator() {
+    val infiniteTransition = rememberInfiniteTransition(label = "pulse")
+    val opacity by infiniteTransition.animateFloat(
+        initialValue = 0.4f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1000, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "opacity"
+    )
+    
+    Row(
+        verticalAlignment = Alignment.CenterVertically, 
+        modifier = Modifier.alpha(opacity).padding(start = 12.dp)
+    ) {
+        Box(
+            Modifier
+                .size(32.dp)
+                .background(AccentBlue.copy(alpha = 0.1f), CircleShape)
+                .border(1.dp, AccentBlue.copy(alpha = 0.2f), CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(Icons.Default.AutoAwesome, contentDescription = null, modifier = Modifier.size(16.dp), tint = AccentBlue)
+        }
+        Spacer(Modifier.width(12.dp))
+        Text("Oracle is processing...", style = Typography.labelSmall, color = TextMuted)
+    }
+}
+
+@Composable
 fun ChatMessageItem(text: String, isUser: Boolean) {
     val richTextState = rememberRichTextState()
     
@@ -182,80 +205,39 @@ fun ChatMessageItem(text: String, isUser: Boolean) {
     }
 
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 12.dp)
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = if (isUser) Alignment.End else Alignment.Start
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            if (!isUser) {
-                Box(
-                    Modifier
-                        .size(28.dp)
-                        .background(ObsidianSurfaceElevated, CircleShape)
-                        .border(1.dp, AccentBlue.copy(alpha = 0.4f), CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        Icons.Default.AutoAwesome,
-                        contentDescription = null,
-                        modifier = Modifier.size(14.dp),
-                        tint = AccentBlue
-                    )
-                }
-                Spacer(Modifier.width(10.dp))
-                Text("ORACLE", style = Typography.labelSmall.copy(letterSpacing = 2.sp, fontWeight = FontWeight.Bold), color = AccentBlue)
-            } else {
-                Text("YOU", style = Typography.labelSmall.copy(letterSpacing = 2.sp, fontWeight = FontWeight.Bold), color = TextMuted)
-                Spacer(Modifier.width(10.dp))
-                Box(
-                    Modifier
-                        .size(28.dp)
-                        .background(AccentBlue.copy(alpha = 0.1f), CircleShape)
-                        .border(1.dp, AccentBlue.copy(alpha = 0.2f), CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        Icons.Default.Person,
-                        contentDescription = null,
-                        modifier = Modifier.size(14.dp),
-                        tint = AccentBlue
-                    )
-                }
-            }
-        }
-
-        Spacer(Modifier.height(8.dp))
-
         if (isUser) {
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                Surface(
-                    color = ObsidianSurfaceElevated,
-                    shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier.widthIn(max = 300.dp)
-                ) {
-                    Text(
-                        text = text,
-                        style = Typography.bodyLarge,
-                        color = TextPrimary,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)
-                    )
-                }
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(20.dp, 20.dp, 4.dp, 20.dp))
+                    .background(ObsidianSurfaceElevated)
+                    .padding(horizontal = 16.dp, vertical = 12.dp)
+            ) {
+                Text(text = text, style = Typography.bodyLarge, color = TextPrimary)
             }
         } else {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 38.dp) // Align with text after icon
-            ) {
-                RichText(
-                    state = richTextState,
-                    style = Typography.bodyLarge,
-                    color = TextPrimary
-                )
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.AutoAwesome, null, tint = AccentBlue, modifier = Modifier.size(14.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text("ORACLE", style = Typography.labelSmall.copy(letterSpacing = 2.sp, fontWeight = FontWeight.Bold), color = AccentBlue)
+                }
+                Spacer(Modifier.height(12.dp))
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(4.dp, 20.dp, 20.dp, 20.dp))
+                        .background(AccentBlue.copy(alpha = 0.05f))
+                        .border(1.dp, AccentBlue.copy(alpha = 0.1f), RoundedCornerShape(4.dp, 20.dp, 20.dp, 20.dp))
+                        .padding(horizontal = 16.dp, vertical = 12.dp)
+                ) {
+                    RichText(
+                        state = richTextState,
+                        style = Typography.bodyLarge,
+                        color = TextPrimary
+                    )
+                }
             }
         }
     }

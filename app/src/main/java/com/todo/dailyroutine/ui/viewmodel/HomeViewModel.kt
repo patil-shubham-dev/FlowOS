@@ -14,9 +14,7 @@ import com.todo.dailyroutine.data.repository.HabitRepository
 import com.todo.dailyroutine.data.repository.TaskRepository
 import com.todo.dailyroutine.data.repository.JournalRepository
 import com.todo.dailyroutine.data.repository.ChatRepository
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.onCompletion
-import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.flow.*
 import com.todo.dailyroutine.data.local.entity.LocalJournalEntry
 import com.todo.dailyroutine.data.local.toEntity
 import kotlinx.coroutines.delay
@@ -50,24 +48,52 @@ data class HomeUiState(
     val availableModels: List<ModelInfo> = emptyList(),
     val notificationsEnabled: Boolean = true,
     val appLockEnabled: Boolean = false,
+    val isVoiceEnabled: Boolean = false,
+    val journalSearchQuery: String = "",
+    val journalFilterDate: String? = null,
+    val isAiProcessing: Boolean = false,
     val error: String? = null
 )
 
 class HomeViewModel(
     val taskRepository: TaskRepository,
     val habitRepository: HabitRepository,
-    private val aiRepository: AiRepository,
     private val journalRepository: JournalRepository,
+    private val aiRepository: AiRepository,
     private val chatRepository: ChatRepository,
     private val sessionManager: com.todo.dailyroutine.data.session.SessionManager,
-    private val aiScheduler: AiScheduler
+    private val aiScheduler: AiScheduler,
+    private val aiContextManager: com.todo.dailyroutine.domain.ai.AiContextManager,
+    private val toolExecutionManager: com.todo.dailyroutine.domain.agent.ToolExecutionManager,
+    private val ttsManager: com.todo.dailyroutine.util.TtsManager
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
     init {
+        initializeSettings()
         observeData()
         loadChatHistory()
+        precalculateInsights()
+    }
+
+    private fun precalculateInsights() {
+        viewModelScope.launch {
+            // Wait for data to be observed
+            delay(1000)
+            val config = aiRepository.getFastConfig(_uiState.value.aiConfig)
+            if (config != null) {
+                aiRepository.generateNextBestAction(
+                    _uiState.value.tasks,
+                    _uiState.value.habits,
+                    _uiState.value.stats.level,
+                    _uiState.value.stats.xpPercent,
+                    config
+                ).onSuccess { action ->
+                    _uiState.value = _uiState.value.copy(oracleInsight = action)
+                }
+            }
+        }
     }
 
     private fun loadChatHistory() {
@@ -99,16 +125,23 @@ class HomeViewModel(
 
     private fun observeData() {
         viewModelScope.launch {
+            // Re-trigger flow when filter changes
             combine(
-                taskRepository.tasks, 
+                taskRepository.tasks,
                 habitRepository.habits,
-                journalRepository.getAllEntries()
-            ) { tasks, habits, journals ->
+                _uiState.map { it.journalSearchQuery }.distinctUntilChanged(),
+                _uiState.map { it.journalFilterDate }.distinctUntilChanged()
+            ) { tasks, habits, query, date ->
+                val journals = when {
+                    !date.isNullOrBlank() -> journalRepository.getEntriesByDate(date).first()
+                    query.isNotBlank() -> journalRepository.searchEntries(query).first()
+                    else -> journalRepository.getAllEntries().first()
+                }
                 Triple(tasks, habits, journals)
             }.collect { (tasks, habits, journals) ->
                 val completedTasks = tasks.count { t -> t.completed }
                 
-                // Refined Sync %: Completion + Time Block Adherence
+                // Refined Sync %
                 val currentHour = java.time.LocalTime.now().hour
                 val currentBlock = when (currentHour) {
                     in 5..11 -> "Morning"
@@ -121,26 +154,42 @@ class HomeViewModel(
                 val baseProgress = if (tasks.isNotEmpty()) (completedTasks * 100) / tasks.size else 0
                 val syncPercent = (baseProgress + adherenceBonus).coerceAtMost(100)
                 
-                // Calculate XP from tasks and habits
                 val totalXp = (completedTasks * 10) + habits.sumOf { h -> h.streak * 5 }
                 val level = GamificationManager.calculateLevel(totalXp)
                 
-                _uiState.value = _uiState.value.copy(
-                    tasks = tasks,
-                    habits = habits,
-                    stats = DashboardStats(
-                        progressPercent = syncPercent,
-                        pendingTasks = tasks.count { t -> !t.completed },
-                        totalXp = totalXp,
-                        level = GamificationManager.getLevelTitle(level)
-                    ),
-                    journalEntries = journals,
-                    appearance = sessionManager.getAppearance(),
-                    aiConfig = sessionManager.getAiConfig(),
-                    notificationsEnabled = sessionManager.isNotificationsEnabled(),
-                    appLockEnabled = sessionManager.isAppLockEnabled()
-                )
+                _uiState.update { currentState ->
+                    currentState.copy(
+                        tasks = tasks,
+                        habits = habits,
+                        stats = DashboardStats(
+                            progressPercent = syncPercent,
+                            pendingTasks = tasks.count { t -> !t.completed },
+                            totalXp = totalXp,
+                            level = GamificationManager.getLevelTitle(level)
+                        ),
+                        journalEntries = journals,
+                        oracleInsight = when (currentHour) {
+                            in 5..11 -> "Morning Protocol: ${tasks.count { !it.completed && it.timeBlock == "Morning" }} high-focus tasks pending. Start with the most difficult one."
+                            in 12..16 -> "Deep Work Session: Energy levels typically peak now. Focus on ${tasks.firstOrNull { !it.completed }?.title ?: "your primary goal"}."
+                            in 17..21 -> "Evening Reflection: ${tasks.count { it.completed }} tasks synced today. Time to capture your reflections."
+                            else -> "Recharge Mode: Prepare for tomorrow. Review your schedule for a clean start."
+                        }
+                    )
+                }
             }
+        }
+    }
+
+    private fun initializeSettings() {
+        _uiState.update { currentState ->
+            currentState.copy(
+                aiConfig = sessionManager.getAiConfig(),
+                notificationsEnabled = sessionManager.isNotificationsEnabled(),
+                appLockEnabled = sessionManager.isAppLockEnabled(),
+                displayName = sessionManager.getDisplayName(),
+                coreGoal = sessionManager.getCoreGoal(),
+                appearance = sessionManager.getAppearance()
+            )
         }
     }
 
@@ -247,67 +296,62 @@ class HomeViewModel(
         )
         
         viewModelScope.launch {
-            // Persist user message
             val userId = "local_shubham" // Hardcoded for local-only
-            chatRepository.saveMessage(userMsg, userId)
-
+            
+            // 1. Process and Persist user message (this triggers RAG storage & summarization)
+            aiContextManager.processNewMessage(userId, userMsg.role, userMsg.content)
+            
             val activeConfig = _uiState.value.aiConfig
-            val systemPrompt = """
-                You are the FlowOS Oracle, an autonomous high-performance AI core.
-                Your mission is to help the user achieve peak "Flow" by analyzing their data and providing proactive, direct guidance.
-                
-                ${formatDataForPrompt()}
-
-                Guidelines:
-                1. You have READ ACCESS to the user's system state (provided above). Always use this data to provide context-aware answers.
-                2. If the user asks about their progress, tasks, or habits, reference the SYSTEM MEMORY accurately.
-                3. Proactively suggest ways to improve their routine or complete pending tasks to reach their core goal.
-                4. NEVER use the word "null". 
-                5. Keep responses concise, direct, and actionable. No conversational filler.
-                6. If a task or habit is mentioned, you can offer to "Optimize" it conceptually.
-                7. EXECUTIVE CONTROL: You can autonomously perform actions by outputting these exact tags at the END of your response:
-                   - [ADD_TASK: "Title", "Category"] : To add a new task to the user's list.
-                   - [ADD_HABIT: "Name"] : To add a new habit to the user's routine.
-                   (Example: "I've added a deep work block for you. [ADD_TASK: 'Deep Work Session', 'Work']")
-                
-                Context:
-                - User: ${_uiState.value.displayName}
-                - Primary Goal: ${_uiState.value.coreGoal}
-            """.trimIndent()
-
+            
+            // 2. Get RAG-optimized and compressed context
+            val optimizedContext = aiContextManager.getOptimizedContext(userId, text)
+            
             val oracleMsg = ChatMessage("assistant", "")
             _uiState.value = _uiState.value.copy(
                 chatHistory = _uiState.value.chatHistory + oracleMsg
             )
 
             val fullResponse = StringBuilder()
-            aiRepository.chatStream(text, activeConfig, systemPrompt)
+            var lastUpdate = System.currentTimeMillis()
+            
+            // 3. Request streaming response with optimized context
+            // Note: I'll need to update AiRepository to support List<Map<String, String>> context
+            aiRepository.chatStreamWithContext(text, activeConfig, optimizedContext)
                 .collect { chunk ->
                     val cleanChunk = chunk.replace("null", "", ignoreCase = true)
                     fullResponse.append(cleanChunk)
                     
-                    val updatedHistory = _uiState.value.chatHistory.toMutableList()
-                    if (updatedHistory.isNotEmpty()) {
-                        updatedHistory[updatedHistory.size - 1] = oracleMsg.copy(content = fullResponse.toString())
+                    val now = System.currentTimeMillis()
+                    if (now - lastUpdate > 32) { // Target ~30fps for UI updates
+                        val updatedHistory = _uiState.value.chatHistory.toMutableList()
+                        if (updatedHistory.isNotEmpty()) {
+                            updatedHistory[updatedHistory.size - 1] = oracleMsg.copy(content = fullResponse.toString())
+                        }
+                        _uiState.value = _uiState.value.copy(chatHistory = updatedHistory)
+                        lastUpdate = now
                     }
-                    _uiState.value = _uiState.value.copy(chatHistory = updatedHistory)
                 }
 
-            val finalResponse = fullResponse.toString()
-            // Parse and execute autonomous actions
-            if (finalResponse.contains("[ADD_TASK:")) {
-                val match = Regex("\\[ADD_TASK:\\s*['\"](.+?)['\"]\\s*,\\s*['\"](.+?)['\"]\\]").find(finalResponse)
-                match?.let {
-                    val title = it.groupValues[1]
-                    val category = it.groupValues[2]
-                    addTask(title, category)
-                }
+            // Final state update
+            val updatedHistory = _uiState.value.chatHistory.toMutableList()
+            if (updatedHistory.isNotEmpty()) {
+                updatedHistory[updatedHistory.size - 1] = oracleMsg.copy(content = fullResponse.toString())
             }
-            if (finalResponse.contains("[ADD_HABIT:")) {
-                val match = Regex("\\[ADD_HABIT:\\s*['\"](.+?)['\"]\\]").find(finalResponse)
-                match?.let {
-                    val name = it.groupValues[1]
-                    addHabit(name)
+            _uiState.value = _uiState.value.copy(
+                chatHistory = updatedHistory,
+                isTyping = false
+            )
+
+            val finalResponse = fullResponse.toString()
+            
+            // Parse and execute autonomous actions using the dedicated manager
+            toolExecutionManager.parseAndExecute(finalResponse, activeConfig)
+
+            // Voice feedback if enabled
+            if (_uiState.value.isVoiceEnabled) {
+                val speechText = finalResponse.replace(Regex("\\[.*?\\]"), "").trim()
+                if (speechText.isNotEmpty()) {
+                    ttsManager.speak(speechText)
                 }
             }
 
@@ -367,6 +411,44 @@ class HomeViewModel(
         }
     }
 
+    fun setSearchQuery(query: String) {
+        _uiState.update { it.copy(journalSearchQuery = query) }
+    }
+
+    fun setFilterDate(date: String?) {
+        _uiState.update { it.copy(journalFilterDate = date) }
+    }
+
+    suspend fun enhanceJournalEntry(content: String): String {
+        if (content.isBlank()) return ""
+        _uiState.update { it.copy(isAiProcessing = true) }
+        
+        val prompt = """
+            You are a writing assistant in FlowOS. Transform the following messy journal entry into a beautifully formatted, readable, and professional reflection. 
+            Use Markdown for structure (headers, bold text, bullet points). 
+            Fix grammar and flow, but preserve the original mood and meaning.
+            If there are clear action items, list them at the end.
+            
+            ENTRY:
+            $content
+        """.trimIndent()
+
+        var enhanced = ""
+        try {
+            aiRepository.getSmartConfig()?.let { config ->
+                aiRepository.chatStreamWithContext(config, listOf(com.todo.dailyroutine.data.ai.ChatMessage("user", prompt)))
+                    .collect { chunk ->
+                        enhanced += chunk
+                    }
+            }
+        } catch (e: Exception) {
+            enhanced = content // Fallback
+        } finally {
+            _uiState.update { it.copy(isAiProcessing = false) }
+        }
+        return enhanced
+    }
+
     fun addJournalEntry(content: String, rating: Int) {
         viewModelScope.launch {
             val userId = taskRepository.tasks.first().firstOrNull()?.userId ?: "local_shubham"
@@ -417,6 +499,24 @@ class HomeViewModel(
         _uiState.value = _uiState.value.copy(aiConfig = config)
     }
 
+    suspend fun enhanceJournalEntry(content: String): String = withContext(Dispatchers.IO) {
+        if (content.isBlank()) return@withContext content
+        
+        val prompt = """
+            Polish the following journal entry to be more readable, structured, and premium. 
+            Maintain the original voice but fix grammar and clarity.
+            Use Markdown formatting (bullet points, bold text) if it helps organization.
+            
+            ENTRY:
+            $content
+            
+            Return ONLY the polished Markdown text.
+        """.trimIndent()
+        
+        val config = aiRepository.getSmartConfig(_uiState.value.aiConfig)
+        aiRepository.chat(prompt, activeConfig = config).getOrElse { content }
+    }
+
     fun detectAiProvider(apiKey: String) {
         if (apiKey.isBlank()) return
         viewModelScope.launch {
@@ -448,10 +548,15 @@ class HomeViewModel(
         }
     }
 
+    fun toggleVoice(enabled: Boolean) {
+        _uiState.value = _uiState.value.copy(isVoiceEnabled = enabled)
+    }
+
     fun fetchModelsFromProvider() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isTyping = true)
-            val models = aiRepository.fetchModels(_uiState.value.aiConfig)
+            // Manual refresh should force network call
+            val models = aiRepository.fetchModels(_uiState.value.aiConfig, forceRefresh = true)
             _uiState.value = _uiState.value.copy(
                 availableModels = models,
                 isTyping = false
@@ -514,10 +619,24 @@ class HomeViewModelFactory(
     private val journalRepository: JournalRepository,
     private val chatRepository: ChatRepository,
     private val sessionManager: com.todo.dailyroutine.data.session.SessionManager,
-    private val aiScheduler: AiScheduler
+    private val aiScheduler: AiScheduler,
+    private val aiContextManager: com.todo.dailyroutine.domain.ai.AiContextManager,
+    private val toolExecutionManager: com.todo.dailyroutine.domain.agent.ToolExecutionManager,
+    private val ttsManager: com.todo.dailyroutine.util.TtsManager
 ) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        return HomeViewModel(taskRepository, habitRepository, aiRepository, journalRepository, chatRepository, sessionManager, aiScheduler) as T
+        return HomeViewModel(
+            taskRepository, 
+            habitRepository, 
+            journalRepository,
+            aiRepository, 
+            chatRepository, 
+            sessionManager, 
+            aiScheduler,
+            aiContextManager,
+            toolExecutionManager,
+            ttsManager
+        ) as T
     }
 }

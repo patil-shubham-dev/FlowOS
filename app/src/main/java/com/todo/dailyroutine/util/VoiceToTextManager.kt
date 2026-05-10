@@ -8,6 +8,10 @@ import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.util.Locale
 
 class VoiceToTextManager(private val context: Context) {
@@ -19,7 +23,11 @@ class VoiceToTextManager(private val context: Context) {
     private val _text = MutableStateFlow("")
     val text = _text.asStateFlow()
 
-    fun startListening() {
+    private var isContinuous = false
+    private val scope = CoroutineScope(Dispatchers.Main)
+
+    fun startListening(continuous: Boolean = false) {
+        isContinuous = continuous
         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
             putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
@@ -40,6 +48,12 @@ class VoiceToTextManager(private val context: Context) {
 
             override fun onError(error: Int) {
                 _isListening.value = false
+                if (isContinuous && error != SpeechRecognizer.ERROR_CLIENT) {
+                    scope.launch {
+                        delay(500)
+                        startListening(true)
+                    }
+                }
             }
 
             override fun onResults(results: Bundle?) {

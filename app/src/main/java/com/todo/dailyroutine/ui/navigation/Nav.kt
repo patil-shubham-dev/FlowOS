@@ -57,19 +57,57 @@ fun FlowOSNavigation(
             container.journalRepository,
             container.chatRepository,
             container.sessionManager,
-            container.aiScheduler
+            container.aiScheduler,
+            container.aiContextManager,
+            container.toolExecutionManager,
+            container.ttsManager
         )
     )
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
+
+    // AI-Driven Navigation
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        container.navigationManager.navigationEvents.collect { route ->
+            if (currentRoute != route) {
+                navController.navigate(route) {
+                    popUpTo(navController.graph.startDestinationId) { saveState = true }
+                    launchSingleTop = true
+                    restoreState = true
+                }
+            }
+        }
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         NavHost(
             navController = navController,
             startDestination = Screen.State.route,
             modifier = Modifier.fillMaxSize(),
-            enterTransition = { fadeIn(tween(400)) },
-            exitTransition = { fadeOut(tween(400)) }
+            enterTransition = { 
+                slideIntoContainer(
+                    AnimatedContentTransitionScope.SlideDirection.Start,
+                    animationSpec = tween(500, easing = EaseInOutQuart)
+                ) + fadeIn(tween(500))
+            },
+            exitTransition = { 
+                slideOutOfContainer(
+                    AnimatedContentTransitionScope.SlideDirection.Start,
+                    animationSpec = tween(500, easing = EaseInOutQuart)
+                ) + fadeOut(tween(500))
+            },
+            popEnterTransition = {
+                slideIntoContainer(
+                    AnimatedContentTransitionScope.SlideDirection.End,
+                    animationSpec = tween(500, easing = EaseInOutQuart)
+                ) + fadeIn(tween(500))
+            },
+            popExitTransition = {
+                slideOutOfContainer(
+                    AnimatedContentTransitionScope.SlideDirection.End,
+                    animationSpec = tween(500, easing = EaseInOutQuart)
+                ) + fadeOut(tween(500))
+            }
         ) {
             composable(Screen.State.route) { DashboardScreen(homeViewModel, navController) }
             composable(Screen.Flow.route) { FlowScreen(homeViewModel) }

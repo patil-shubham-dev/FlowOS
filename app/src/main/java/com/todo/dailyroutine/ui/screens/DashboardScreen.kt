@@ -101,50 +101,89 @@ fun DashboardScreen(viewModel: HomeViewModel, navController: NavHostController? 
                 }
             }
 
-            // Hero Metric
+            // Hero Metric (Vitality Pulse)
             item {
-                GlassCard(
+                Row(
                     modifier = Modifier.fillMaxWidth(),
-                    backgroundColor = ObsidianSurfaceElevated.copy(alpha = 0.4f)
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("Current Sync", style = Typography.labelSmall, color = TextSecondary)
-                            Spacer(Modifier.width(8.dp))
-                            Box(Modifier.size(8.dp).background(SuccessGreen, CircleShape))
-                        }
-                        Spacer(Modifier.height(8.dp))
+                    VitalityPulse(
+                        progress = uiState.stats.progressPercent / 100f,
+                        modifier = Modifier.size(160.dp)
+                    )
+                    
+                    Spacer(Modifier.width(24.dp))
+                    
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("Operational Flow", style = Typography.labelSmall, color = TextMuted)
                         Row(verticalAlignment = Alignment.Bottom) {
-                            Text("${uiState.stats.progressPercent}%", style = Typography.displayLarge.copy(fontSize = 56.sp), color = TextPrimary)
-                            Spacer(Modifier.width(12.dp))
-                            Text("Consistency Level: ${uiState.stats.level}", style = Typography.labelMedium, color = AccentBlue, modifier = Modifier.padding(bottom = 12.dp))
+                            Text("${uiState.stats.progressPercent}", style = Typography.displayLarge.copy(fontSize = 64.sp), color = TextPrimary)
+                            Text("%", style = Typography.headlineMedium, color = TextMuted, modifier = Modifier.padding(bottom = 12.dp))
                         }
-                        LinearProgressIndicator(
+                        
+                        Text("Status: ${uiState.stats.level}", style = Typography.labelMedium, color = AccentBlue)
+                        
+                        Spacer(Modifier.height(12.dp))
+                        
+                        GradientProgressBar(
                             progress = uiState.stats.progressPercent / 100f,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(4.dp)
-                                .clip(CircleShape),
-                            color = AccentBlue,
-                            trackColor = ObsidianBackground
+                            gradient = FlowGradient
                         )
                     }
                 }
             }
+            
+            // Flow Consistency Heatmap
+            item {
+                Column {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("Operational Consistency", style = Typography.labelSmall, color = TextMuted)
+                        Text("LAST 7 DAYS", style = Typography.labelSmall, color = AccentBlue.copy(alpha = 0.5f))
+                    }
+                    Spacer(Modifier.height(12.dp))
+                    GlassCard {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            (0..6).forEach { i ->
+                                val intensity = when(i) {
+                                    0 -> 0.2f 1 -> 0.8f 2 -> 1.0f 3 -> 0.4f 4 -> 0.9f 5 -> 0.7f else -> 0.1f
+                                }
+                                Box(
+                                    modifier = Modifier
+                                        .size(36.dp)
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(
+                                            Brush.verticalGradient(
+                                                listOf(AccentBlue.copy(alpha = intensity), AccentCyan.copy(alpha = intensity * 0.5f))
+                                            )
+                                        )
+                                        .border(1.dp, if (intensity > 0.5f) AccentCyan.copy(alpha = 0.5f) else BorderSubtle, RoundedCornerShape(8.dp))
+                                )
+                            }
+                        }
+                    }
+                }
+            }
 
-            // Quick Actions
+            // Control Pad (Quick Actions)
             item {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    QuickActionItem("Add Task", Icons.Default.Add, Modifier.weight(1f)) {
+                    QuickActionItem("COMMAND", Icons.Default.Add, Modifier.weight(1f)) {
                         showAddTaskDialog = true
                     }
-                    QuickActionItem("Oracle", Icons.Default.AutoAwesome, Modifier.weight(1f)) {
+                    QuickActionItem("ORACLE", Icons.Default.AutoAwesome, Modifier.weight(1f)) {
                         navController?.navigate("oracle")
                     }
-                    QuickActionItem("Journal", Icons.Default.EditNote, Modifier.weight(1f)) {
+                    QuickActionItem("JOURNAL", Icons.Default.EditNote, Modifier.weight(1f)) {
                         navController?.navigate("journal")
                     }
                 }

@@ -59,25 +59,11 @@ class AppContainer(private val context: Context) {
     }
 
     val oracleToolExecutor by lazy {
-        OracleToolExecutor(taskRepository, habitRepository, journalRepository, flowScoreRepository)
+        OracleToolExecutor(taskRepository, habitRepository, journalRepository, flowScoreRepository, navigationManager)
     }
 
     val aiToolController by lazy {
         AiToolController(oracleToolExecutor, aiRepository, sessionManager)
-    }
-
-    val aiContextManager by lazy { 
-        AiContextManager(
-            aiRepository,
-            db.messageDao(),
-            db.summaryDao(),
-            vectorMemoryManager,
-            memoryPipeline,
-            taskRepository,
-            habitRepository,
-            journalRepository,
-            flowScoreRepository
-        )
     }
 
     val searchViewModelFactory by lazy {
@@ -86,6 +72,10 @@ class AppContainer(private val context: Context) {
 
     val voiceToTextManager by lazy {
         VoiceToTextManager(context)
+    }
+
+    val navigationManager by lazy {
+        com.todo.dailyroutine.util.AppNavigationManager()
     }
 
     val omniViewModelFactory by lazy {
@@ -102,6 +92,34 @@ class AppContainer(private val context: Context) {
 
     val aiScheduler by lazy { 
         com.todo.dailyroutine.domain.scheduling.AiScheduler(aiRepository) 
+    }
+
+    val aiContextManager by lazy {
+        com.todo.dailyroutine.domain.ai.AiContextManager(
+            aiRepository,
+            db.messageDao(),
+            db.summaryDao(),
+            vectorMemoryManager,
+            memoryPipeline,
+            taskRepository,
+            habitRepository,
+            journalRepository,
+            flowScoreRepository
+        )
+    }
+
+    val toolExecutionManager by lazy {
+        com.todo.dailyroutine.domain.agent.ToolExecutionManager(
+            taskRepository,
+            habitRepository,
+            journalRepository,
+            aiScheduler,
+            navigationManager
+        )
+    }
+
+    val ttsManager by lazy {
+        com.todo.dailyroutine.util.TtsManager(context)
     }
 
     val notificationScheduler by lazy { 

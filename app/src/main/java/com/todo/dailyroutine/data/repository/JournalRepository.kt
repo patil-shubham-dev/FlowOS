@@ -34,8 +34,8 @@ class JournalRepository(
         
         // Update persistent streak
         val currentStreak = getCurrentStreak(userId)
-        val existingStreak = streakDao.getStreak(userId)
-        val longestStreak = maxOf(currentStreak, existingStreak?.longestStreak ?: 0)
+        val streak = streakDao.getStreak(userId)
+        val longestStreak = maxOf(currentStreak, streak?.longestStreak ?: 0)
         
         streakDao.updateStreak(
             LocalJournalStreak(
@@ -47,8 +47,13 @@ class JournalRepository(
         )
     }
 
+    fun searchEntries(query: String): Flow<List<LocalJournalEntry>> = journalDao.searchEntries(query)
+
+    fun getEntriesByDate(date: String): Flow<List<LocalJournalEntry>> = journalDao.getEntriesByDate(date)
+
     suspend fun getEntryForToday(): LocalJournalEntry? {
-        return journalDao.getEntryByDate(java.time.LocalDate.now().toString())
+        val today = java.time.LocalDate.now().toString()
+        return journalDao.getEntriesByDate(today).first().firstOrNull()
     }
 
     suspend fun getCurrentStreak(userId: String): Int {

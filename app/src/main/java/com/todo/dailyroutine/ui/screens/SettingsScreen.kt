@@ -300,6 +300,7 @@ fun SettingsScreen(viewModel: HomeViewModel) {
                 SettingsSection("System") {
                     SettingsToggle(Icons.Default.Security, "Privacy Lock", uiState.appLockEnabled) { viewModel.toggleAppLock() }
                     SettingsToggle(Icons.Default.Notifications, "Notifications", uiState.notificationsEnabled) { viewModel.toggleNotifications() }
+                    SettingsToggle(Icons.Default.RecordVoiceOver, "Voice-First Interactivity", uiState.isVoiceEnabled) { viewModel.toggleVoice(!uiState.isVoiceEnabled) }
                 }
             }
 
@@ -320,34 +321,67 @@ fun SettingsScreen(viewModel: HomeViewModel) {
 @Composable
 fun SettingsSection(title: String, content: @Composable ColumnScope.() -> Unit) {
     Column {
-        Text(title, style = Typography.labelSmall, color = TextMuted, modifier = Modifier.padding(start = 4.dp, bottom = 8.dp))
-        GlassCard(backgroundColor = ObsidianSurface) { Column(verticalArrangement = Arrangement.spacedBy(16.dp)) { content() } }
+        Text(title.uppercase(), style = Typography.labelSmall.copy(letterSpacing = 2.sp), color = TextMuted, modifier = Modifier.padding(start = 4.dp, bottom = 12.dp))
+        GlassCard(backgroundColor = ObsidianSurface.copy(alpha = 0.5f)) { 
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) { content() } 
+        }
     }
 }
 
 @Composable
 fun SettingsRow(icon: ImageVector, title: String, value: String, onClick: () -> Unit) {
-    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clickable { onClick() }) {
-        Icon(icon, null, tint = AccentBlue, modifier = Modifier.size(20.dp))
+    Row(
+        verticalAlignment = Alignment.CenterVertically, 
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(
+                interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                indication = null
+            ) { onClick() }
+            .padding(vertical = 4.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(36.dp)
+                .background(AccentBlue.copy(alpha = 0.1f), CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(icon, null, tint = AccentBlue, modifier = Modifier.size(18.dp))
+        }
         Spacer(Modifier.width(16.dp))
         Column(modifier = Modifier.weight(1f)) {
-            Text(title, style = Typography.bodyLarge)
+            Text(title, style = Typography.bodyLarge.copy(fontWeight = FontWeight.Medium))
             Text(value, style = Typography.labelSmall, color = TextMuted)
         }
-        Icon(Icons.Default.ChevronRight, null, tint = TextMuted)
+        Icon(Icons.Default.ChevronRight, null, tint = TextMuted, modifier = Modifier.size(20.dp))
     }
 }
 
 @Composable
 fun SettingsToggle(icon: ImageVector, title: String, checked: Boolean, onToggle: () -> Unit) {
-    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-        Icon(icon, null, tint = AccentBlue, modifier = Modifier.size(20.dp))
+    Row(
+        verticalAlignment = Alignment.CenterVertically, 
+        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(36.dp)
+                .background(AccentBlue.copy(alpha = 0.1f), CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(icon, null, tint = AccentBlue, modifier = Modifier.size(18.dp))
+        }
         Spacer(Modifier.width(16.dp))
-        Text(title, style = Typography.bodyLarge, modifier = Modifier.weight(1f))
+        Text(title, style = Typography.bodyLarge.copy(fontWeight = FontWeight.Medium), modifier = Modifier.weight(1f))
         Switch(
             checked = checked, 
             onCheckedChange = { onToggle() },
-            colors = SwitchDefaults.colors(checkedThumbColor = AccentBlue, checkedTrackColor = AccentBlue.copy(alpha = 0.3f), uncheckedThumbColor = TextMuted, uncheckedTrackColor = ObsidianSurface)
+            colors = SwitchDefaults.colors(
+                checkedThumbColor = AccentBlue, 
+                checkedTrackColor = AccentBlue.copy(alpha = 0.3f), 
+                uncheckedThumbColor = TextMuted, 
+                uncheckedTrackColor = ObsidianBackground
+            )
         )
     }
 }

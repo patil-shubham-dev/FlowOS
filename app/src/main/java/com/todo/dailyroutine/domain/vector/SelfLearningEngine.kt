@@ -104,18 +104,38 @@ class SelfLearningEngine(
     }
 
     private suspend fun detectPatterns(userId: String, memories: List<LocalMemory>) {
-        if (memories.size < 5) return
+        // Fetch a larger window for long-range analysis
+        val longTermMemories = memoryDao.getLongTermMemories(userId, 100)
+        if (longTermMemories.size < 5) return
         
-        val allText = memories.joinToString("\n") { "[${it.type}] ${it.text}" }
+        val allText = longTermMemories.joinToString("\n") { 
+            val date = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(java.util.Date(it.timestamp))
+            "[$date] [${it.type}] ${it.text}" 
+        }
+        
+        val energyPeak = detectEnergyPeak(userId)
+        val existingInsights = memoryDao.getMemoriesByType(userId, "insight")
+        val insightHistory = existingInsights.joinToString("\n") { "- ${it.text}" }
+        
         val patternPrompt = """
-            Analyze these user memories as a behaviorist. Identify non-obvious patterns, 
-            behavioral loops, or subconscious preferences.
+            Analyze these user memories over a long range as a behavioral neuroscientist. 
+            Identify macro-patterns, cognitive shifts, and subtle behavioral loops.
             
-            Memories:
+            Current Energy Baseline: $energyPeak
+            
+            Previous Insights (Historical Context):
+            $insightHistory
+            
+            New Observations:
             $allText
             
-            If you find a deep insight (e.g. "User avoids High-Energy tasks on Mondays"), 
-            return it as a single line starting with "INSIGHT: ". 
+            TASKS:
+            1. Identify if any previous insights are now INVALID or have EVOLVED.
+            2. Detect new long-range patterns (e.g., "User's evening productivity is declining over the last 3 weeks").
+            3. Identify cross-domain correlations (e.g., "Journal vibes correlate negatively with Monday workloads").
+            
+            If you find a deep, high-confidence macro-insight, return it as a single line starting with "INSIGHT: ". 
+            Focus on LONG-TERM trends, not one-off events.
             Otherwise return "NONE".
         """.trimIndent()
         
@@ -124,7 +144,6 @@ class SelfLearningEngine(
             val insight = patternResponse.removePrefix("INSIGHT:").trim()
             
             // Check for similar existing insights to avoid duplication
-            val existingInsights = memoryDao.getMemoriesByType(userId, "insight")
             val isDuplicate = existingInsights.any { 
                 vectorMemoryManager.vectorEngine.calculateCosineSimilarity(
                     vectorMemoryManager.vectorEngine.generateEmbedding(insight),
@@ -137,9 +156,15 @@ class SelfLearningEngine(
                     userId = userId,
                     text = insight,
                     type = "insight",
-                    importance = 0.9f
+                    importance = 0.95f // Higher importance for long-range insights
                 )
             }
         }
+    }
+
+    private suspend fun detectEnergyPeak(userId: String): String {
+        // In a real app, this would query TaskRepository for completion timestamps
+        // For now, we simulate based on common patterns
+        return "Peak performance usually occurs between 09:00 and 12:00 (Deep Work Phase)."
     }
 }

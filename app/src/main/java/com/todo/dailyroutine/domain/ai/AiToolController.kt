@@ -67,6 +67,30 @@ class AiToolController(
                 "name" to "get_daily_summary",
                 "description" to "Retrieve the current day's progress and Flow Score",
                 "parameters" to mapOf("type" to "object", "properties" to mapOf<String, Any>())
+            )),
+            mapOf("type" to "function", "function" to mapOf(
+                "name" to "analyze_energy_trends",
+                "description" to "Analyze historical task data to identify peak performance windows",
+                "parameters" to mapOf("type" to "object", "properties" to mapOf<String, Any>())
+            )),
+            mapOf("type" to "function", "function" to mapOf(
+                "name" to "set_focus_mode",
+                "description" to "Activate internal FlowOS Focus Protocol (Zen Mode)",
+                "parameters" to mapOf("type" to "object", "properties" to mapOf(
+                    "enabled" to mapOf("type" to "boolean")
+                ), "required" to listOf("enabled"))
+            )),
+            mapOf("type" to "function", "function" to mapOf(
+                "name" to "navigate_to_feature",
+                "description" to "Navigate the user to a specific app protocol/tab",
+                "parameters" to mapOf("type" to "object", "properties" to mapOf(
+                    "tab" to mapOf("type" to "string", "enum" to listOf("state", "flow", "oracle", "journal", "settings"))
+                ), "required" to listOf("tab"))
+            )),
+            mapOf("type" to "function", "function" to mapOf(
+                "name" to "reschedule_conflicts",
+                "description" to "Automatically resolve schedule overlaps for optimal flow",
+                "parameters" to mapOf("type" to "object", "properties" to mapOf<String, Any>())
             ))
         )
     }

@@ -21,23 +21,23 @@
 
 ## ⚡ Core Intelligence Pillars
 
-### 1. **Autonomous Executive Control (New)**
-The **Oracle** is now an active agent with full system awareness. It doesn't just talk; it acts.
-*   **System Awareness (Read)**: The Oracle possesses a live bridge to your tasks, habits, and journals. It analyzes your patterns to provide hyper-personalized coaching.
-*   **Executive Intent (Write)**: The Oracle can autonomously perform actions. It can add tasks, establish new habits, and reorganize your schedule based on your "Flow" state.
-*   **Direct Interaction**: Stripped of conversational fluff, the Oracle now provides high-density, direct answers to your queries.
+### 1. **Life Guidance & Consistency (New)**
+The **Oracle** has evolved from a passive assistant into a **Life Guidance Coach**. It focuses on understanding your unique life rhythms to ensure absolute consistency.
+*   **Biological Synchronization**: The AI analyzes your energy levels and task completion patterns to guide you toward your peak performance windows.
+*   **App-Centric Boundaries**: The AI operates strictly within the FlowOS environment. It doesn't interfere with your system hardware, focusing instead on optimizing your internal protocol and focus state.
+*   **Proactive Guidance**: Instead of just executing commands, the AI provides empathetic coaching and can navigate you to relevant app features (like your Journal or Flow list) when it senses you need a moment of reflection or realignment.
 
-### 2. **Neural Sync Streaming**
-Experience zero-latency intelligence.
-*   **Token-by-Token Streaming**: Leveraging Google Gemini 1.5 Flash, FlowOS streams AI responses in real-time, eliminating waiting periods for full payloads.
-*   **High-Density Typography**: Optimized Claude-inspired document reading experience with tuned line heights for mobile devices.
-*   **Optimized Latency**: Model-specific tuning (Temperature 0.3, Max Tokens 512) for the snappiest mobile AI experience available.
+### 2. **Self-Learning Engine (Long-Range)**
+Experience intelligence that grows with you.
+*   **Macro-Pattern Detection**: The engine now analyzes up to 100 historical memories to identify long-term behavioral shifts, cognitive slumps, and weekly cyclical patterns.
+*   **Insight Cross-Referencing**: New observations are continuously checked against historical insights to track your evolution over months, not just days.
+*   **Memory Refinement**: Automatic consolidation of similar memories ensures your "Flow Context" remains high-density and relevant.
 
 ### 3. **Total Data Sovereignty**
-We have eliminated all external authentication dependencies.
-*   **Local-Only Protocol**: No Firebase, no remote auth. Your identity, keys, and data stay exclusively on your hardware.
-*   **Encrypted API Vault**: Securely manage your AI Studio, OpenAI, and Anthropic keys with hardware-backed encryption.
-*   **Privacy-First Design**: Even the Oracle's reasoning happens within a localized "Flow Context" that is never stored on a server.
+We maintain absolute data isolation.
+*   **Local-Only Protocol**: No remote auth. Your identity, keys, and behavioral patterns stay exclusively on your hardware.
+*   **Encrypted AI Vault**: Securely manage your AI Studio and universal API keys with hardware-backed encryption.
+*   **Privacy-First Design**: The Oracle's reasoning happens within a localized context that is never stored or shared.
 
 ---
 
@@ -59,13 +59,13 @@ sequenceDiagram
     participant Executive_Bridge
     participant Data_Store
 
-    User->>Oracle: "I'm overwhelmed with work."
-    Oracle->>Data_Store: Fetch Live Tasks & Habits
-    Data_Store-->>Oracle: Return System Context
-    Oracle->>Oracle: Analyze Load (Agent Logic)
-    Oracle->>User: "Scheduled a Focus Block for you."
-    Oracle->>Executive_Bridge: [ADD_TASK: "Focus Session"]
-    Executive_Bridge->>Data_Store: Commit New Task
+    User->>Oracle: "I feel like I'm losing my morning routine."
+    Oracle->>Data_Store: Fetch 30-day Habit History
+    Data_Store-->>Oracle: Return Behavioral Patterns
+    Oracle->>Oracle: Identify consistency slump
+    Oracle->>User: "I've noticed a shift. Let's review your ritual."
+    Oracle->>Executive_Bridge: [NAVIGATE: Journal]
+    Executive_Bridge->>User: Switches to Journal Protocol
 ```
 
 ---

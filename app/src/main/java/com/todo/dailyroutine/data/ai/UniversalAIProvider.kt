@@ -29,16 +29,19 @@ interface UniversalAIProvider {
         systemPrompt: String? = null
     ): Flow<String>
 
+    fun chatStreamWithContext(
+        config: AiProviderConfig,
+        messages: List<Map<String, String>>
+    ): Flow<String>
+
     suspend fun supportsTools(): Boolean = false
 }
 
 abstract class BaseOpenAICompatibleProvider : UniversalAIProvider {
     override suspend fun testConnection(config: AiProviderConfig): Boolean {
-        return try {
-            fetchModels(config).isNotEmpty()
-        } catch (e: Exception) {
-            false
-        }
+        // Light check: if we have an API key and a valid-looking URL, we're likely okay.
+        // The first real chat call will confirm it. This avoids a redundant fetchModels call.
+        return config.apiKey.isNotBlank() && (config.baseUrl.isBlank() || config.baseUrl.startsWith("http"))
     }
 
     override suspend fun fetchModels(config: AiProviderConfig): List<ModelInfo> {
@@ -81,12 +84,16 @@ abstract class BaseOpenAICompatibleProvider : UniversalAIProvider {
         }
     }
 
-    override fun chatStream(config: AiProviderConfig, prompt: String, systemPrompt: String?): Flow<String> = flow {
-        val baseUrl = if (config.baseUrl.isNotBlank()) config.baseUrl.removeSuffix("/") else defaultBaseUrl.removeSuffix("/")
-        val url = "$baseUrl/chat/completions"
+    override fun chatStream(config: AiProviderConfig, prompt: String, systemPrompt: String?): Flow<String> {
         val messages = mutableListOf<Map<String, String>>()
         if (systemPrompt != null) messages.add(mapOf("role" to "system", "content" to systemPrompt))
         messages.add(mapOf("role" to "user", "content" to prompt))
+        return chatStreamWithContext(config, messages)
+    }
+
+    override fun chatStreamWithContext(config: AiProviderConfig, messages: List<Map<String, String>>): Flow<String> = flow {
+        val baseUrl = if (config.baseUrl.isNotBlank()) config.baseUrl.removeSuffix("/") else defaultBaseUrl.removeSuffix("/")
+        val url = "$baseUrl/chat/completions"
         
         val body = mutableMapOf<String, Any>(
             "model" to (config.selectedModelId ?: "gpt-4o"),
@@ -140,6 +147,38 @@ class GenericProvider(override val id: String, override val name: String, overri
     override fun getApi() = api
 }
 
+class OllamaProvider(private val api: UniversalAiApi) : BaseOpenAICompatibleProvider() {
+    override val id = "ollama"
+    override val name = "Ollama"
+    override val defaultBaseUrl = "http://localhost:11434/v1"
+    override fun getApi() = api
+
+    override suspend fun fetchModels(config: AiProviderConfig): List<ModelInfo> {
+        // Try standard OpenAI /models first
+        val openaiModels = super.fetchModels(config)
+        if (openaiModels.isNotEmpty()) return openaiModels
+
+        // Fallback to Ollama-specific /api/tags
+        return try {
+            val baseUrl = if (config.baseUrl.isNotBlank()) config.baseUrl.replace("/v1", "") else "http://localhost:11434"
+            val response = api.getModels("$baseUrl/api/tags", emptyMap())
+            if (!response.isSuccessful) return emptyList()
+            val raw = response.body()?.string() ?: return emptyList()
+            val json = JSONObject(raw)
+            val modelsArray = json.getJSONArray("models")
+            val models = mutableListOf<ModelInfo>()
+            for (i in 0 until modelsArray.length()) {
+                val item = modelsArray.getJSONObject(i)
+                val modelName = item.getString("name")
+                models.add(ModelInfo(id = modelName, displayName = modelName))
+            }
+            models
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+}
+
 class AnthropicProvider(private val api: UniversalAiApi) : UniversalAIProvider {
     override val id = "anthropic"
     override val name = "Anthropic"
@@ -161,16 +200,27 @@ class AnthropicProvider(private val api: UniversalAiApi) : UniversalAIProvider {
         }
     }
 
-    override fun chatStream(config: AiProviderConfig, prompt: String, systemPrompt: String?): Flow<String> = flow {
+    override fun chatStream(config: AiProviderConfig, prompt: String, systemPrompt: String?): Flow<String> {
+        val messages = mutableListOf<Map<String, String>>()
+        messages.add(mapOf("role" to "user", "content" to prompt))
+        return chatStreamWithContext(config, messages)
+    }
+
+    override fun chatStreamWithContext(config: AiProviderConfig, messages: List<Map<String, String>>): Flow<String> = flow {
         val url = "$defaultBaseUrl/messages"
-        val messages = listOf(mapOf("role" to "user", "content" to prompt))
+        
+        // Anthropic expects system prompt separately or as a system role (if using newer API, but usually 'system' field)
+        // Let's check if there is a 'system' role in messages and extract it
+        val systemMsg = messages.find { it["role"] == "system" }?.get("content")
+        val userMessages = messages.filter { it["role"] != "system" }
+
         val body = mutableMapOf<String, Any>(
             "model" to (config.selectedModelId ?: "claude-3-5-sonnet-20240620"),
-            "messages" to messages,
+            "messages" to userMessages,
             "max_tokens" to config.maxTokens,
             "stream" to true
         )
-        if (systemPrompt != null) body["system"] = systemPrompt
+        if (systemMsg != null) body["system"] = systemMsg
 
         val headers = mapOf(
             "x-api-key" to config.apiKey,
@@ -229,14 +279,29 @@ class GoogleGeminiProvider(private val api: UniversalAiApi) : UniversalAIProvide
         }
     }
 
-    override fun chatStream(config: AiProviderConfig, prompt: String, systemPrompt: String?): Flow<String> = flow {
+    override fun chatStream(config: AiProviderConfig, prompt: String, systemPrompt: String?): Flow<String> {
+        val messages = mutableListOf<Map<String, String>>()
+        if (systemPrompt != null) messages.add(mapOf("role" to "system", "content" to systemPrompt))
+        messages.add(mapOf("role" to "user", "content" to prompt))
+        return chatStreamWithContext(config, messages)
+    }
+
+    override fun chatStreamWithContext(config: AiProviderConfig, messages: List<Map<String, String>>): Flow<String> = flow {
         val model = config.selectedModelId ?: "gemini-1.5-pro"
         val url = "$defaultBaseUrl/models/$model:streamGenerateContent?key=${config.apiKey}&alt=sse"
         
-        val contents = listOf(mapOf("parts" to listOf(mapOf("text" to prompt))))
-        val body = mutableMapOf<String, Any>("contents" to contents)
-        if (systemPrompt != null) {
-            body["system_instruction"] = mapOf("parts" to listOf(mapOf("text" to systemPrompt)))
+        // Extract system prompt
+        val systemMsg = messages.find { it["role"] == "system" }?.get("content")
+        val chatMessages = messages.filter { it["role"] != "system" }.map {
+            mapOf(
+                "role" to (if (it["role"] == "assistant") "model" else "user"),
+                "parts" to listOf(mapOf("text" to it["content"]))
+            )
+        }
+
+        val body = mutableMapOf<String, Any>("contents" to chatMessages)
+        if (systemMsg != null) {
+            body["system_instruction"] = mapOf("parts" to listOf(mapOf("text" to systemMsg)))
         }
 
         val headers = mapOf(
@@ -341,7 +406,7 @@ object ProviderFactory {
             "sambanova" -> GenericProvider("sambanova", "SambaNova", "https://api.sambanova.ai/v1", api)
             "moonshot" -> GenericProvider("moonshot", "Moonshot AI", "https://api.moonshot.cn/v1", api)
             "qwen" -> GenericProvider("qwen", "Alibaba Qwen", "https://dashscope.aliyuncs.com/compatible-mode/v1", api)
-            "ollama" -> GenericProvider("ollama", "Ollama", "http://localhost:11434/v1", api)
+            "ollama" -> OllamaProvider(api)
             "lmstudio" -> GenericProvider("lmstudio", "LM Studio", "http://localhost:1234/v1", api)
             else -> GenericProvider("custom", "Custom Provider", "", api)
         }

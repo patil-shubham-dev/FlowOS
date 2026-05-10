@@ -14,6 +14,8 @@ data class AiProviderConfig(
     val supportsVision: Boolean = false,
     val supportsTools: Boolean = false,
     val isActive: Boolean = false,
+    val fastModelId: String? = null, // Used for quick UI/Background tasks
+    val smartModelId: String? = null, // Used for complex reasoning/chat
     val metadataJson: String? = null // For provider-specific extras like organization ID
 )
 

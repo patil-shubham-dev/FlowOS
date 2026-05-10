@@ -14,8 +14,11 @@ interface JournalDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertEntry(entry: LocalJournalEntry)
 
-    @Query("SELECT * FROM journal_entries WHERE date = :date LIMIT 1")
-    suspend fun getEntryByDate(date: String): LocalJournalEntry?
+    @Query("SELECT * FROM journal_entries WHERE content LIKE '%' || :query || '%' ORDER BY timestamp DESC")
+    fun searchEntries(query: String): Flow<List<LocalJournalEntry>>
+
+    @Query("SELECT * FROM journal_entries WHERE date = :date ORDER BY timestamp DESC")
+    fun getEntriesByDate(date: String): Flow<List<LocalJournalEntry>>
 
     @Delete
     suspend fun deleteEntry(entry: LocalJournalEntry)
@@ -100,6 +103,9 @@ interface MessageDao {
 interface MemoryDao {
     @Query("SELECT * FROM ai_memories WHERE userId = :userId ORDER BY importance DESC, timestamp DESC LIMIT 20")
     suspend fun getAllMemories(userId: String): List<LocalMemory>
+
+    @Query("SELECT * FROM ai_memories WHERE userId = :userId ORDER BY timestamp DESC LIMIT :limit")
+    suspend fun getLongTermMemories(userId: String, limit: Int = 100): List<LocalMemory>
 
     @Query("SELECT * FROM ai_memories WHERE id = :id LIMIT 1")
     suspend fun getMemoryById(id: String): LocalMemory?

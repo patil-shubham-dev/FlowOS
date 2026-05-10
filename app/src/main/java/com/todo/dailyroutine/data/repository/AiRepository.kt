@@ -33,6 +33,8 @@ class AiRepository(
     /**
      * Detects provider and fetches available models for a given API key.
      */
+    private val modelCache = mutableMapOf<String, List<ModelInfo>>()
+
     suspend fun detectProviderAndModels(apiKey: String): Pair<AiProviderConfig, List<ModelInfo>>? = withContext(Dispatchers.IO) {
         val input = apiKey.trim()
         val providerId = ProviderDetector.detect(input) ?: return@withContext null
@@ -64,10 +66,19 @@ class AiRepository(
     /**
      * Fetches available models for a given provider config.
      */
-    suspend fun fetchModels(config: AiProviderConfig): List<ModelInfo> = withContext(Dispatchers.IO) {
-        val provider = ProviderFactory.getProvider(config.providerId, universalAiApi)
+    suspend fun fetchModels(config: AiProviderConfig, forceRefresh: Boolean = false): List<ModelInfo> = withContext(Dispatchers.IO) {
+        val cacheKey = "${config.providerId}:${config.apiKey}"
+        if (!forceRefresh && modelCache.containsKey(cacheKey)) {
+            return@withContext modelCache[cacheKey] ?: emptyList()
+        }
+
         try {
-            provider.fetchModels(config)
+            val provider = ProviderFactory.getProvider(config.providerId, universalAiApi)
+            val models = provider.fetchModels(config)
+            if (models.isNotEmpty()) {
+                modelCache[cacheKey] = models
+            }
+            models
         } catch (e: Exception) {
             e.printStackTrace()
             emptyList()
@@ -105,8 +116,9 @@ class AiRepository(
         jsonMode: Boolean = false
     ): Result<String> = withContext(Dispatchers.IO) {
         runCatching {
-            if (activeConfig != null) {
-                generateWithDynamicConfig(activeConfig, prompt, systemPrompt, tools, jsonMode).getOrThrow()
+            val config = getSmartConfig(activeConfig)
+            if (config != null) {
+                generateWithDynamicConfig(config, prompt, systemPrompt, tools, jsonMode).getOrThrow()
             } else {
                 throw Exception("No active AI configuration")
             }
@@ -118,10 +130,38 @@ class AiRepository(
         activeConfig: AiProviderConfig? = null,
         systemPrompt: String? = null
     ): Flow<String> {
-        val config = activeConfig ?: return flow { emit("Error: No configuration") }
+        val config = getSmartConfig(activeConfig) ?: return flow { emit("Error: No configuration") }
         val provider = ProviderFactory.getProvider(config.providerId, universalAiApi)
         return provider.chatStream(config, prompt, systemPrompt)
             .flowOn(Dispatchers.IO)
+    }
+
+    fun chatStreamWithContext(
+        prompt: String,
+        activeConfig: AiProviderConfig? = null,
+        context: List<Map<String, String>> = emptyList()
+    ): Flow<String> {
+        val config = getSmartConfig(activeConfig) ?: return flow { emit("Error: No configuration") }
+        val provider = ProviderFactory.getProvider(config.providerId, universalAiApi)
+        return provider.chatStreamWithContext(config, context)
+            .flowOn(Dispatchers.IO)
+    }
+
+    /**
+     * Helpers for Model Tiering
+     */
+    fun getFastConfig(config: AiProviderConfig?): AiProviderConfig? {
+        val base = config ?: return null
+        return if (!base.fastModelId.isNullOrBlank()) {
+            base.copy(selectedModelId = base.fastModelId)
+        } else base
+    }
+
+    fun getSmartConfig(config: AiProviderConfig?): AiProviderConfig? {
+        val base = config ?: return null
+        return if (!base.smartModelId.isNullOrBlank()) {
+            base.copy(selectedModelId = base.smartModelId)
+        } else base
     }
 
     suspend fun transcribeAudio(file: java.io.File, config: AiProviderConfig?): Result<String> = withContext(Dispatchers.IO) {
@@ -214,7 +254,7 @@ class AiRepository(
             Level: $level, XP: $xp
             Give one short mobile-friendly line: "Next best action: ..."
         """.trimIndent()
-        chat(prompt, activeConfig = config).getOrThrow()
+        chat(prompt, activeConfig = getFastConfig(config)).getOrThrow()
     }
 
     suspend fun parseIntent(input: String, activeConfig: AiProviderConfig?): Result<ParsedIntent> = runCatching {

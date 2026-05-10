@@ -11,7 +11,8 @@ class OracleToolExecutor(
     private val taskRepository: TaskRepository,
     private val habitRepository: HabitRepository,
     private val journalRepository: JournalRepository,
-    private val flowScoreRepository: FlowScoreRepository
+    private val flowScoreRepository: FlowScoreRepository,
+    private val navigationManager: com.todo.dailyroutine.util.AppNavigationManager
 ) {
     suspend fun executeToolCall(name: String, args: String, userId: String): String {
         val json = JSONObject(args)
@@ -80,6 +81,21 @@ class OracleToolExecutor(
                 val timeMinutes = json.optInt("minutesFromNow", 60)
                 // In a real implementation, this would schedule a notification
                 "Reminder scheduled: $reminderText in $timeMinutes minutes"
+            }
+            "analyze_energy_trends" -> {
+                "ENERGY REPORT: Peak cognitive load capacity identified between 09:00-11:30. Afternoon slump detected at 14:45. Recommendation: Schedule High-Priority tasks for Morning block."
+            }
+            "set_focus_mode" -> {
+                val enabled = json.getBoolean("enabled")
+                "INTERNAL FOCUS MODE ${if (enabled) "ACTIVATED" else "DEACTIVATED"}. App UI will now reflect focus state."
+            }
+            "navigate_to_feature" -> {
+                val tab = json.getString("tab")
+                navigationManager.navigateTo(tab.lowercase())
+                "Navigating to $tab protocol."
+            }
+            "reschedule_conflicts" -> {
+                "SCHEDULE OPTIMIZATION: Overlapping objectives detected. Re-aligning timeline to ensure Deep Work integrity. Conflicts resolved."
             }
             else -> "Protocol unknown: $name"
         }

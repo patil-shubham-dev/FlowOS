@@ -9,6 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.Canvas
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -22,15 +23,25 @@ fun GlassCard(
     modifier: Modifier = Modifier,
     backgroundColor: Color = ObsidianSurface,
     borderColor: Color = BorderSubtle,
+    innerBorderColor: Color = Color.White.copy(alpha = 0.03f),
     onClick: (() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit
 ) {
-    Surface(
-        modifier = if (onClick != null) modifier.clickable { onClick() } else modifier,
-        color = backgroundColor,
-        shape = RoundedCornerShape(24.dp),
-        border = BorderStroke(1.dp, borderColor)
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(24.dp))
+            .background(backgroundColor)
+            .border(BorderStroke(1.dp, borderColor), RoundedCornerShape(24.dp))
+            .then(if (onClick != null) Modifier.clickable { onClick() } else Modifier)
     ) {
+        // Inner depth stroke
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .padding(1.dp)
+                .border(BorderStroke(1.dp, innerBorderColor), RoundedCornerShape(23.dp))
+        )
+        
         Column(
             modifier = Modifier.padding(16.dp),
             content = content
@@ -148,5 +159,49 @@ fun StatusChip(
         Box(Modifier.size(6.dp).background(color, CircleShape))
         Spacer(Modifier.width(6.dp))
         Text(label, style = Typography.labelSmall, color = color)
+    }
+@Composable
+fun VitalityPulse(
+    progress: Float,
+    modifier: Modifier = Modifier,
+    color: Color = AccentBlue
+) {
+    Box(modifier = modifier, contentAlignment = Alignment.Center) {
+        Canvas(modifier = Modifier.size(160.dp)) {
+            drawCircle(
+                color = color.copy(alpha = 0.05f),
+                radius = size.minDimension / 2,
+                style = androidx.compose.ui.graphics.drawscope.Stroke(width = 4.dp.toPx())
+            )
+            drawArc(
+                color = color,
+                startAngle = -90f,
+                sweepAngle = 360f * progress,
+                useCenter = false,
+                style = androidx.compose.ui.graphics.drawscope.Stroke(width = 8.dp.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round)
+            )
+        }
+    }
+}
+
+@Composable
+fun GradientProgressBar(
+    progress: Float,
+    gradient: List<Color>,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(8.dp)
+            .clip(CircleShape)
+            .background(ObsidianSurfaceElevated)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth(progress.coerceIn(0f, 1f))
+                .fillMaxHeight()
+                .background(Brush.horizontalGradient(gradient))
+        )
     }
 }

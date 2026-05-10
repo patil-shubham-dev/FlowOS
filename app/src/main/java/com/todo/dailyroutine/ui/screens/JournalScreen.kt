@@ -25,28 +25,44 @@ import com.todo.dailyroutine.ui.viewmodel.HomeViewModel
 @Composable
 fun JournalScreen(viewModel: HomeViewModel) {
     val uiState by viewModel.uiState.collectAsState()
-    var showAddDialog by remember { mutableStateOf(false) }
-    var reflectionText by remember { mutableStateOf("") }
-    var rating by remember { mutableIntStateOf(7) }
+    val scope = rememberCoroutineScope()
 
     if (showAddDialog) {
         AlertDialog(
             onDismissRequest = { showAddDialog = false },
             containerColor = ObsidianSurface,
-            title = { Text("Daily Reflection", color = TextPrimary) },
+            title = { 
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("Daily Reflection", color = TextPrimary)
+                    Spacer(Modifier.weight(1f))
+                    if (uiState.isAiProcessing) {
+                        CircularProgressIndicator(modifier = Modifier.size(20.dp), color = AccentBlue, strokeWidth = 2.dp)
+                    } else {
+                        IconButton(onClick = {
+                            scope.launch {
+                                val enhanced = viewModel.enhanceJournalEntry(reflectionText)
+                                reflectionText = enhanced
+                            }
+                        }) {
+                            Icon(Icons.Default.AutoAwesome, "Enhance with AI", tint = AccentBlue)
+                        }
+                    }
+                }
+            },
             text = {
                 Column {
                     TextField(
                         value = reflectionText,
                         onValueChange = { reflectionText = it },
                         placeholder = { Text("What's on your mind?", color = TextMuted) },
-                        modifier = Modifier.fillMaxWidth().height(120.dp),
+                        modifier = Modifier.fillMaxWidth().height(200.dp),
                         colors = TextFieldDefaults.colors(
                             focusedContainerColor = ObsidianBackground,
                             unfocusedContainerColor = ObsidianBackground,
                             focusedTextColor = TextPrimary,
                             unfocusedTextColor = TextPrimary
-                        )
+                        ),
+                        shape = RoundedCornerShape(12.dp)
                     )
                     Spacer(Modifier.height(16.dp))
                     Text("Energy Level: $rating/10", color = TextSecondary, style = Typography.labelMedium)
@@ -55,11 +71,7 @@ fun JournalScreen(viewModel: HomeViewModel) {
                         onValueChange = { rating = it.toInt() },
                         valueRange = 1f..10f,
                         steps = 8,
-                        colors = SliderDefaults.colors(
-                            thumbColor = AccentBlue,
-                            activeTrackColor = AccentBlue,
-                            inactiveTrackColor = BorderSubtle
-                        )
+                        colors = SliderDefaults.colors(thumbColor = AccentBlue, activeTrackColor = AccentBlue)
                     )
                 }
             },
@@ -70,14 +82,10 @@ fun JournalScreen(viewModel: HomeViewModel) {
                         reflectionText = ""
                         showAddDialog = false
                     }
-                }) {
-                    Text("SAVE", color = AccentBlue)
-                }
+                }) { Text("SAVE", color = AccentBlue) }
             },
             dismissButton = {
-                TextButton(onClick = { showAddDialog = false }) {
-                    Text("CANCEL", color = TextMuted)
-                }
+                TextButton(onClick = { showAddDialog = false }) { Text("CANCEL", color = TextMuted) }
             }
         )
     }
@@ -86,38 +94,78 @@ fun JournalScreen(viewModel: HomeViewModel) {
         containerColor = ObsidianBackground
     ) { padding ->
         LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(horizontal = 20.dp),
+            modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
             item { Spacer(Modifier.height(16.dp)) }
 
-            // Header
+            // Header & Search
             item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text("Reflections", style = Typography.headlineLarge)
-                    IconButton(onClick = { showAddDialog = true }) {
-                        Icon(Icons.Default.Add, contentDescription = null, tint = AccentBlue)
+                Column {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("Reflections", style = Typography.displaySmall)
+                        IconButton(onClick = { showAddDialog = true }) {
+                            Icon(Icons.Default.AddCircle, null, tint = AccentBlue, modifier = Modifier.size(32.dp))
+                        }
                     }
+                    
+                    Spacer(Modifier.height(16.dp))
+                    
+                    TextField(
+                        value = uiState.journalSearchQuery,
+                        onValueChange = { viewModel.setSearchQuery(it) },
+                        modifier = Modifier.fillMaxWidth(),
+                        placeholder = { Text("Search your logs...", color = TextMuted) },
+                        leadingIcon = { Icon(Icons.Default.Search, null, tint = TextMuted) },
+                        trailingIcon = {
+                            if (uiState.journalSearchQuery.isNotEmpty()) {
+                                IconButton(onClick = { viewModel.setSearchQuery("") }) {
+                                    Icon(Icons.Default.Close, null, tint = TextMuted)
+                                }
+                            }
+                        },
+                        colors = TextFieldDefaults.colors(
+                            focusedContainerColor = ObsidianSurface,
+                            unfocusedContainerColor = ObsidianSurface,
+                            focusedTextColor = TextPrimary,
+                            unfocusedTextColor = TextPrimary,
+                            focusedIndicatorColor = Color.Transparent,
+                            unfocusedIndicatorColor = Color.Transparent
+                        ),
+                        shape = RoundedCornerShape(12.dp)
+                    )
                 }
             }
 
-            // Calendar Strip (Simplified)
+            // Calendar Strip (Interactive)
             item {
-                LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    items(7) { i ->
-                        val day = when(i) {
-                            0 -> "M" 1 -> "T" 2 -> "W" 3 -> "T" 4 -> "F" 5 -> "S" else -> "S"
+                Column {
+                    Text(
+                        if (uiState.journalFilterDate == null) "This Week" else "Filtered: ${uiState.journalFilterDate}",
+                        style = Typography.labelSmall,
+                        color = TextMuted,
+                        modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
+                    )
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        items(7) { i ->
+                            val dateObj = java.time.LocalDate.now().minusDays(i.toLong())
+                            val dateStr = dateObj.toString()
+                            val isSelected = uiState.journalFilterDate == dateStr
+                            
+                            CalendarDay(
+                                day = dateObj.dayOfWeek.name.take(1),
+                                date = dateObj.dayOfMonth.toString(),
+                                active = isSelected,
+                                onClick = {
+                                    if (isSelected) viewModel.setFilterDate(null)
+                                    else viewModel.setFilterDate(dateStr)
+                                }
+                            )
                         }
-                        CalendarDay(day, "${15 + i}", active = i == 2)
                     }
                 }
             }
@@ -133,7 +181,7 @@ fun JournalScreen(viewModel: HomeViewModel) {
                         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                             listOf("⚡ Optimized", "🔋 Neutral", "📉 Low").forEach { mood ->
                                 SuggestionChip(mood) { 
-                                    reflectionText = "Feeling $mood."
+                                    reflectionText = "Feeling $mood. "
                                     showAddDialog = true 
                                 }
                             }
@@ -148,15 +196,20 @@ fun JournalScreen(viewModel: HomeViewModel) {
             if (uiState.journalEntries.isEmpty()) {
                 item {
                     Box(Modifier.fillMaxWidth().padding(vertical = 40.dp), contentAlignment = Alignment.Center) {
-                        Text("No reflections recorded yet.", color = TextMuted, style = Typography.labelMedium)
+                        Text(
+                            if (uiState.journalSearchQuery.isNotEmpty() || uiState.journalFilterDate != null) 
+                                "No matches found." else "No reflections recorded yet.",
+                            color = TextMuted,
+                            style = Typography.labelMedium
+                        )
                     }
                 }
             } else {
-                items(uiState.journalEntries.sortedByDescending { it.date }) { entry ->
+                items(uiState.journalEntries.sortedByDescending { it.timestamp }) { entry ->
                     JournalEntryCard(
                         date = entry.date,
                         content = entry.content,
-                        insight = entry.aiInsight ?: "Insight generation pending.",
+                        insight = entry.aiInsight ?: "Intelligence report incoming...",
                         rating = entry.rating
                     )
                 }
@@ -168,58 +221,89 @@ fun JournalScreen(viewModel: HomeViewModel) {
 }
 
 @Composable
-fun CalendarDay(day: String, date: String, active: Boolean) {
+fun CalendarDay(day: String, date: String, active: Boolean, onClick: () -> Unit) {
+    val glowColor = if (active) AccentBlue else Color.Transparent
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
-            .width(48.dp)
-            .clip(RoundedCornerShape(12.dp))
+            .width(52.dp)
+            .clip(RoundedCornerShape(16.dp))
             .background(if (active) AccentBlue else ObsidianSurface)
-            .border(1.dp, if (active) AccentBlue else BorderSubtle, RoundedCornerShape(12.dp))
-            .padding(vertical = 12.dp)
+            .then(if (active) Modifier.shadow(8.dp, RoundedCornerShape(16.dp), ambientColor = glowColor, spotColor = glowColor) else Modifier)
+            .border(1.dp, if (active) AccentBlue else BorderSubtle, RoundedCornerShape(16.dp))
+            .clickable { onClick() }
+            .padding(vertical = 14.dp)
     ) {
-        Text(day, style = Typography.labelSmall, color = if (active) ObsidianBackground else TextSecondary)
-        Text(date, style = Typography.titleMedium, color = if (active) ObsidianBackground else TextPrimary, fontWeight = FontWeight.Bold)
+        Text(day, style = Typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = if (active) ObsidianBackground else TextMuted)
+        Spacer(Modifier.height(4.dp))
+        Text(date, style = Typography.titleLarge, color = if (active) ObsidianBackground else TextPrimary, fontWeight = FontWeight.Black)
     }
 }
 
 @Composable
 fun JournalEntryCard(date: String, content: String, insight: String, rating: Int) {
-    GlassCard {
+    val energyColor = when {
+        rating >= 8 -> SuccessGreen
+        rating >= 5 -> AccentBlue
+        else -> AccentRose
+    }
+    
+    GlassCard(
+        backgroundColor = ObsidianSurfaceElevated.copy(alpha = 0.3f),
+        borderColor = BorderSubtle.copy(alpha = 0.4f)
+    ) {
         Column {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(date, style = Typography.labelSmall, color = TextSecondary)
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.Star, contentDescription = null, tint = WarningYellow, modifier = Modifier.size(12.dp))
-                    Spacer(Modifier.width(4.dp))
-                    Text("$rating/10", style = Typography.labelSmall, color = TextPrimary)
+                    Box(Modifier.size(8.dp).background(energyColor, CircleShape))
+                    Spacer(Modifier.width(8.dp))
+                    Text(date.uppercase(), style = Typography.labelSmall.copy(letterSpacing = 1.sp), color = TextMuted)
+                }
+                
+                Surface(
+                    color = energyColor.copy(alpha = 0.1f),
+                    shape = CircleShape,
+                    border = BorderStroke(1.dp, energyColor.copy(alpha = 0.2f))
+                ) {
+                    Text(
+                        "$rating", 
+                        style = Typography.labelSmall.copy(fontWeight = FontWeight.Bold), 
+                        color = energyColor,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                    )
                 }
             }
             
-            Spacer(Modifier.height(12.dp))
-            Text(content, style = Typography.bodyMedium, lineHeight = 20.sp)
+            Spacer(Modifier.height(20.dp))
+            Text(
+                content, 
+                style = Typography.bodyLarge.copy(lineHeight = 26.sp), 
+                color = TextPrimary
+            )
             
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(24.dp))
             
-            // AI Analysis block
+            // Premium AI Analysis block
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(ObsidianBackground.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
-                    .padding(12.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(Brush.linearGradient(listOf(AccentBlue.copy(alpha = 0.08f), Color.Transparent)))
+                    .border(BorderStroke(1.dp, Brush.linearGradient(listOf(AccentBlue.copy(alpha = 0.15f), Color.Transparent))), RoundedCornerShape(16.dp))
+                    .padding(16.dp)
             ) {
                 Column {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = AccentBlue, modifier = Modifier.size(14.dp))
-                        Spacer(Modifier.width(8.dp))
-                        Text("Oracle Analysis", style = Typography.labelSmall, color = AccentBlue)
+                        Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = AccentBlue, modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(10.dp))
+                        Text("ORACLE COGNITION", style = Typography.labelSmall.copy(letterSpacing = 1.sp, fontWeight = FontWeight.Bold), color = AccentBlue)
                     }
-                    Spacer(Modifier.height(4.dp))
-                    Text(insight, style = Typography.labelMedium, color = TextSecondary)
+                    Spacer(Modifier.height(8.dp))
+                    Text(insight, style = Typography.bodyMedium, color = TextSecondary)
                 }
             }
         }

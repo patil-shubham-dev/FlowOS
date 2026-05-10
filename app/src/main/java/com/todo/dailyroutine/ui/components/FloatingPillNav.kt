@@ -32,49 +32,54 @@ fun FloatingPillNav(
     onNavigate: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Surface(
+    Box(
         modifier = modifier
             .padding(horizontal = 24.dp, vertical = 24.dp)
-            .height(64.dp)
-            .fillMaxWidth(),
-        color = ObsidianSurfaceElevated.copy(alpha = 0.95f),
-        shape = RoundedCornerShape(32.dp),
-        border = BorderStroke(1.dp, BorderSubtle),
-        shadowElevation = 12.dp
+            .height(72.dp)
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(36.dp))
+            .background(ObsidianSurfaceElevated.copy(alpha = 0.8f))
+            .border(1.dp, BorderSubtle, RoundedCornerShape(36.dp))
+            .padding(horizontal = 8.dp),
+        contentAlignment = Alignment.Center
     ) {
         Row(
-            modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
+            modifier = Modifier.fillMaxSize(),
+            horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically
         ) {
             items.forEach { item ->
                 val isSelected = currentRoute == item.route
-                val iconColor by animateColorAsState(if (isSelected) AccentBlue else TextSecondary, label = "IconColor")
+                val iconColor by animateColorAsState(if (isSelected) AccentBlue else TextMuted, label = "IconColor")
+                val scale by animateFloatAsState(if (isSelected) 1.2f else 1f, label = "Scale")
                 
                 Box(
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxHeight()
-                        .clip(CircleShape)
-                        .clickable { onNavigate(item.route) },
+                        .clickable(
+                            interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                            indication = null
+                        ) { onNavigate(item.route) },
                     contentAlignment = Alignment.Center
                 ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(
-                            imageVector = item.icon,
-                            contentDescription = item.label,
-                            tint = iconColor,
-                            modifier = Modifier.size(24.dp)
+                    if (isSelected) {
+                        Box(
+                            modifier = Modifier
+                                .size(48.dp)
+                                .background(AccentBlue.copy(alpha = 0.1f), CircleShape)
+                                .border(1.dp, AccentBlue.copy(alpha = 0.1f), CircleShape)
                         )
-                        if (isSelected) {
-                            Box(
-                                modifier = Modifier
-                                    .padding(top = 4.dp)
-                                    .size(3.dp)
-                                    .background(AccentBlue, CircleShape)
-                            )
-                        }
                     }
+                    
+                    Icon(
+                        imageVector = item.icon,
+                        contentDescription = item.label,
+                        tint = iconColor,
+                        modifier = Modifier
+                            .size(24.dp)
+                            .graphicsLayer(scaleX = scale, scaleY = scale)
+                    )
                 }
             }
         }

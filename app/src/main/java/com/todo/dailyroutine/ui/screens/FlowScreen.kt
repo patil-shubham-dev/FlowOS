@@ -86,44 +86,26 @@ fun FlowScreen(viewModel: HomeViewModel) {
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("Operational Flow", style = Typography.headlineLarge)
-                IconButton(onClick = { showAddDialog = true }) {
+                Column {
+                    Text("Execution Matrix", style = Typography.displaySmall)
+                    Text("Protocol: Standard Execution", color = TextMuted, style = Typography.labelMedium)
+                }
+                IconButton(
+                    onClick = { showAddDialog = true },
+                    modifier = Modifier.background(AccentBlue.copy(alpha = 0.1f), CircleShape)
+                ) {
                     Icon(Icons.Default.Add, contentDescription = null, tint = AccentBlue)
                 }
             }
             
-            Text("Protocol: Standard Execution", color = TextSecondary, style = Typography.labelMedium)
-            
             Spacer(Modifier.height(24.dp))
 
             // Tab Pill Selector
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(ObsidianSurface, RoundedCornerShape(12.dp))
-                    .padding(4.dp),
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                listOf("Tasks", "Rituals", "Calendar").forEach { tab ->
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(36.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(if (selectedTab == tab) ObsidianSurfaceElevated else Color.Transparent)
-                            .clickable { selectedTab = tab }
-                            .then(if (selectedTab == tab) Modifier.border(1.dp, BorderSubtle, RoundedCornerShape(8.dp)) else Modifier),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = tab,
-                            color = if (selectedTab == tab) TextPrimary else TextSecondary,
-                            style = Typography.labelMedium,
-                            fontWeight = if (selectedTab == tab) FontWeight.Bold else FontWeight.Normal
-                        )
-                    }
-                }
-            }
+            PillTabs(
+                selectedTab = selectedTab,
+                tabs = listOf("Tasks", "Rituals", "Calendar"),
+                onTabSelected = { selectedTab = it }
+            )
 
             Spacer(Modifier.height(24.dp))
 
@@ -136,23 +118,53 @@ fun FlowScreen(viewModel: HomeViewModel) {
                         val activeTasks = uiState.tasks.filter { !it.completed }
                         val completedTasks = uiState.tasks.filter { it.completed }
                         
-                        item { SectionHeader(title = "Queue (${activeTasks.size})") }
-                        items(activeTasks) { task ->
-                            TaskRow(
-                                title = task.title,
-                                time = task.timeBlock ?: "Now",
-                                isCompleted = false,
-                                onToggle = { viewModel.toggleTask(task) },
-                                onDelete = { viewModel.deleteTask(task.id) }
-                            )
+                        val grouped = activeTasks.groupBy { it.timeBlock ?: "Now" }
+                        val blocks = listOf("Morning", "Deep Work", "Evening", "Night", "Now")
+                        
+                        blocks.forEach { block ->
+                            val tasksInBlock = grouped[block] ?: emptyList()
+                            if (tasksInBlock.isNotEmpty()) {
+                                item { 
+                                    val blockColor = when(block) {
+                                        "Morning" -> Color(0xFFFF9500)
+                                        "Deep Work" -> AccentBlue
+                                        "Evening" -> Color(0xFF5856D6)
+                                        "Night" -> Color(0xFF1D1D1F)
+                                        else -> AccentCyan
+                                    }
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.padding(bottom = 8.dp)
+                                    ) {
+                                        Box(
+                                            Modifier
+                                                .size(12.dp, 12.dp)
+                                                .clip(CircleShape)
+                                                .background(blockColor)
+                                                .border(2.dp, blockColor.copy(alpha = 0.3f), CircleShape)
+                                        )
+                                        Spacer(Modifier.width(12.dp))
+                                        Text(block.uppercase(), style = Typography.labelSmall.copy(letterSpacing = 2.sp), color = TextMuted)
+                                    }
+                                }
+                                items(tasksInBlock) { task ->
+                                    TaskRow(
+                                        title = task.title,
+                                        time = task.scheduledTime ?: "ASAP",
+                                        isCompleted = false,
+                                        onToggle = { viewModel.toggleTask(task) },
+                                        onDelete = { viewModel.deleteTask(task.id) }
+                                    )
+                                }
+                            }
                         }
                         
                         if (completedTasks.isNotEmpty()) {
-                            item { SectionHeader(title = "Completed") }
+                            item { SectionHeader(title = "Protocol Completed") }
                             items(completedTasks) { task ->
                                 TaskRow(
                                     title = task.title,
-                                    time = task.timeBlock ?: "Done",
+                                    time = "Archived",
                                     isCompleted = true,
                                     onToggle = { viewModel.toggleTask(task) },
                                     onDelete = { viewModel.deleteTask(task.id) }

@@ -10,8 +10,9 @@ val ObsidianSurfaceBright = Color(0xFF1C1C24)
 
 // Primary Accents
 val AccentBlue = Color(0xFF007AFF) // SF Blue
-val AccentBlueSoft = Color(0xFF007AFF).copy(alpha = 0.15f)
-val AccentBlueMuted = Color(0xFF007AFF).copy(alpha = 0.4f)
+val AccentCyan = Color(0xFF32ADE6)
+val AccentPurple = Color(0xFF5856D6)
+val AccentRose = Color(0xFFFF2D55)
 
 // Semantic Colors
 val SuccessGreen = Color(0xFF34C759)
@@ -20,15 +21,20 @@ val ErrorRed = Color(0xFFFF3B30)
 
 // Text Hierarchy
 val TextPrimary = Color(0xFFFFFFFF)
-val TextSecondary = Color(0xFF8E8E93)
-val TextMuted = Color(0xFF48484A)
+val TextSecondary = Color(0xFFAEB1B7)
+val TextMuted = Color(0xFF636366)
 
 // Status Colors (from Protocol Sync)
-val StatusMemory = Color(0xFF34C759)
+val StatusMemory = Color(0xFF32ADE6)
 val StatusTasks = Color(0xFF007AFF)
 val StatusRituals = Color(0xFFFFCC00)
 val StatusJournal = Color(0xFF5856D6)
 
 // Borders & Dividers
 val BorderSubtle = Color(0xFF1C1C24)
-val BorderBright = Color(0xFF2C2C34)
+val BorderBright = Color(0xFF3A3A3C)
+
+// Gradients
+val FlowGradient = listOf(AccentBlue, AccentCyan)
+val EnergyGradient = listOf(AccentRose, AccentPurple)
+val SuccessGradient = listOf(SuccessGreen, Color(0xFF28A745))
