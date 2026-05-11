@@ -10,6 +10,7 @@ val ObsidianSurfaceBright = Color(0xFF1C1C24)
 
 // Primary Accents
 val AccentBlue = Color(0xFF007AFF) // SF Blue
+val AccentBlueSoft = Color(0xFF0056B3)
 val AccentCyan = Color(0xFF32ADE6)
 val AccentPurple = Color(0xFF5856D6)
 val AccentRose = Color(0xFFFF2D55)

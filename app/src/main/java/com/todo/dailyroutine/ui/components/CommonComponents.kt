@@ -160,6 +160,8 @@ fun StatusChip(
         Spacer(Modifier.width(6.dp))
         Text(label, style = Typography.labelSmall, color = color)
     }
+}
+
 @Composable
 fun VitalityPulse(
     progress: Float,

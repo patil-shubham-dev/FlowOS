@@ -22,6 +22,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import com.todo.dailyroutine.domain.gamification.GamificationManager
 import com.todo.dailyroutine.domain.scheduling.AiScheduler
 import com.todo.dailyroutine.domain.scheduling.ScheduleConflictDetector
@@ -87,7 +89,7 @@ class HomeViewModel(
                     _uiState.value.tasks,
                     _uiState.value.habits,
                     _uiState.value.stats.level,
-                    _uiState.value.stats.xpPercent,
+                    _uiState.value.stats.totalXp,
                     config
                 ).onSuccess { action ->
                     _uiState.value = _uiState.value.copy(oracleInsight = action)
@@ -435,11 +437,15 @@ class HomeViewModel(
 
         var enhanced = ""
         try {
-            aiRepository.getSmartConfig()?.let { config ->
-                aiRepository.chatStreamWithContext(config, listOf(com.todo.dailyroutine.data.ai.ChatMessage("user", prompt)))
-                    .collect { chunk ->
-                        enhanced += chunk
-                    }
+            val config = aiRepository.getSmartConfig(_uiState.value.aiConfig)
+            if (config != null) {
+                aiRepository.chatStreamWithContext(
+                    prompt = "Enhance the journal entry.",
+                    activeConfig = config,
+                    context = listOf(mapOf("role" to "user", "content" to prompt))
+                ).collect { chunk ->
+                    enhanced += chunk
+                }
             }
         } catch (e: Exception) {
             enhanced = content // Fallback
@@ -497,24 +503,6 @@ class HomeViewModel(
     fun updateAiConfig(config: AiProviderConfig) {
         sessionManager.setAiConfig(config)
         _uiState.value = _uiState.value.copy(aiConfig = config)
-    }
-
-    suspend fun enhanceJournalEntry(content: String): String = withContext(Dispatchers.IO) {
-        if (content.isBlank()) return@withContext content
-        
-        val prompt = """
-            Polish the following journal entry to be more readable, structured, and premium. 
-            Maintain the original voice but fix grammar and clarity.
-            Use Markdown formatting (bullet points, bold text) if it helps organization.
-            
-            ENTRY:
-            $content
-            
-            Return ONLY the polished Markdown text.
-        """.trimIndent()
-        
-        val config = aiRepository.getSmartConfig(_uiState.value.aiConfig)
-        aiRepository.chat(prompt, activeConfig = config).getOrElse { content }
     }
 
     fun detectAiProvider(apiKey: String) {

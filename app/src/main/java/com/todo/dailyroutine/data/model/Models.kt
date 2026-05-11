@@ -50,7 +50,8 @@ data class DashboardStats(
 data class ChatMessage(
     val role: String,
     val content: String,
-    val timestamp: Long = System.currentTimeMillis()
+    val timestamp: Long = System.currentTimeMillis(),
+    val id: String = java.util.UUID.randomUUID().toString()
 )
 
 data class AiReminderPlan(

@@ -61,6 +61,11 @@ class TaskRepository(
         taskDao.updateTask(task.copy(syncStatus = 2, lastUpdated = System.currentTimeMillis()))
     }
 
+    suspend fun updateTask(task: TaskItem): Result<Unit> = runCatching {
+        val local = task.toEntity().copy(syncStatus = 2, lastUpdated = System.currentTimeMillis())
+        taskDao.updateTask(local)
+    }
+
     suspend fun softDeleteTask(id: String): Result<Unit> = runCatching {
         taskDao.softDeleteTask(id)
     }

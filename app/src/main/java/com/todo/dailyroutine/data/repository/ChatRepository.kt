@@ -29,6 +29,7 @@ class ChatRepository(private val messageDao: MessageDao) {
 
     private fun LocalMessage.toChatMessage() = ChatMessage(
         role = role,
-        content = content
+        content = content,
+        timestamp = timestamp
     )
 }

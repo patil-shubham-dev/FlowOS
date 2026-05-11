@@ -92,7 +92,7 @@ fun AiScreen(viewModel: HomeViewModel) {
             ) {
                 items(
                     items = uiState.chatHistory,
-                    key = { it.timestamp }
+                    key = { it.id }
                 ) { message ->
                     ChatMessageItem(
                         text = message.content,

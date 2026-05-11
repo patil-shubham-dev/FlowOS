@@ -6,7 +6,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-2.5--Neural--Sync-blueviolet?style=for-the-badge" />
+  <img src="https://img.shields.io/badge/Version-2.6--Life--Guidance-blueviolet?style=for-the-badge" />
   <img src="https://img.shields.io/badge/Platform-Android-green?style=for-the-badge&logo=android" />
   <img src="https://img.shields.io/badge/Intelligence-Autonomous-purple?style=for-the-badge" />
   <img src="https://img.shields.io/badge/Privacy-Local--Only-orange?style=for-the-badge" />
@@ -14,18 +14,23 @@
 
 ---
 
-## 🌌 The Vision: V2.5 "Neural Sync"
-**FlowOS** has evolved from a task manager into a **Mobile Agentic OS**. In the V2.5 update, we introduced the **Neural Sync** protocol—a high-performance streaming architecture that connects the Oracle AI directly to your device's executive functions.
+## 🌌 The Vision: V2.6 "Life Guidance"
+**FlowOS** has evolved from a task manager into a **Mobile Agentic OS**. In the V2.6 update, we introduce the **Life Guidance Protocol**—transforming the Oracle AI into a proactive coach that manages your consistency, not just your schedule.
 
 ---
 
 ## ⚡ Core Intelligence Pillars
 
-### 1. **Life Guidance & Consistency (New)**
+### 1. **Life Guidance & Consistency**
 The **Oracle** has evolved from a passive assistant into a **Life Guidance Coach**. It focuses on understanding your unique life rhythms to ensure absolute consistency.
 *   **Biological Synchronization**: The AI analyzes your energy levels and task completion patterns to guide you toward your peak performance windows.
 *   **App-Centric Boundaries**: The AI operates strictly within the FlowOS environment. It doesn't interfere with your system hardware, focusing instead on optimizing your internal protocol and focus state.
 *   **Proactive Guidance**: Instead of just executing commands, the AI provides empathetic coaching and can navigate you to relevant app features (like your Journal or Flow list) when it senses you need a moment of reflection or realignment.
+
+### 2. **Stability & Reliability (V2.6)**
+*   **Thread-Safe AI Streaming**: Implemented robust concurrency handling for real-time AI responses via Kotlin Flow and Neural Sync.
+*   **Unique Memory Protocol**: Transitioned to a UUID-based indexing system for chat history to prevent UI collisions and ensure stable protocol synchronization.
+*   **Visual Consistency**: Optimized adaptive icon scaling with high-density safe-zone padding and pure obsidian black background for a premium OS feel.
 
 ### 2. **Self-Learning Engine (Long-Range)**
 Experience intelligence that grows with you.

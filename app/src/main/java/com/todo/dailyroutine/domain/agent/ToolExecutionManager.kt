@@ -2,6 +2,7 @@ package com.todo.dailyroutine.domain.agent
 
 import com.todo.dailyroutine.data.repository.TaskRepository
 import com.todo.dailyroutine.data.repository.HabitRepository
+import com.todo.dailyroutine.data.local.toEntity
 import com.todo.dailyroutine.domain.scheduling.AiScheduler
 import com.todo.dailyroutine.data.model.AiProviderConfig
 import kotlinx.coroutines.CoroutineScope
@@ -53,7 +54,7 @@ class ToolExecutionManager(
             scope.launch {
                 val tasks = taskRepository.getAllTasksSync().filter { !it.completed }
                 if (tasks.isNotEmpty()) {
-                    aiScheduler.optimizeSchedule(tasks, config)
+                    aiScheduler.optimizeSchedule(tasks.map { it.toEntity() }, config)
                         .onSuccess { reorderList ->
                             reorderList.forEach { (id, priority) ->
                                 val task = tasks.find { it.id == id }

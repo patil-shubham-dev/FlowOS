@@ -14,18 +14,24 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.todo.dailyroutine.ui.components.*
 import com.todo.dailyroutine.ui.theme.*
 import com.todo.dailyroutine.ui.viewmodel.HomeViewModel
+import kotlinx.coroutines.launch
 
 @Composable
 fun JournalScreen(viewModel: HomeViewModel) {
     val uiState by viewModel.uiState.collectAsState()
     val scope = rememberCoroutineScope()
+    var showAddDialog by remember { mutableStateOf(false) }
+    var reflectionText by remember { mutableStateOf("") }
+    var rating by remember { mutableStateOf(7) }
 
     if (showAddDialog) {
         AlertDialog(
