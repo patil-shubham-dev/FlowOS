@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FlowOS — Design Reference</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --canvas: #fafafa;
+  --surface: #ffffff;
+  --surface-sunken: #f5f5f5;
+  --surface-panel: #f0f0f0;
+  --ink: #1a1a1a;
+  --ink-secondary: #666666;
+  --ink-faint: #999999;
+  --accent: #e85d26;
+  --accent-light: #fff4ef;
+  --accent-dark: #c44a1c;
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --info: #3b82f6;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-pill: 999px;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04);
+  --shadow-lg: 0 12px 40px rgba(0,0,0,0.12), 0 4px 12px rgba(0,0,0,0.06);
+  --shadow-glow: 0 0 0 3px rgba(232,93,38,0.15);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Inter', system-ui, sans-serif; background: var(--canvas); color: var(--ink); line-height: 1.55; -webkit-font-smoothing: antialiased; }
+
+/* ========== TOP BAR ========== */
+.topbar { display: flex; align-items: center; gap: 16px; padding: 12px 24px; background: rgba(255,255,255,0.85); backdrop-filter: blur(16px); border-bottom: 1px solid rgba(0,0,0,0.04); position: sticky; top: 0; z-index: 100; }
+.topbar-brand { font-weight: 800; font-size: 18px; letter-spacing: -0.03em; background: linear-gradient(135deg, var(--accent), var(--accent-dark)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.topbar-nav { display: flex; gap: 4px; margin-left: 24px; }
+.topbar-nav a { font-size: 14px; font-weight: 500; color: var(--ink-secondary); text-decoration: none; padding: 8px 12px; border-radius: var(--radius-sm); transition: all 0.15s; }
+.topbar-nav a:hover { color: var(--ink); background: rgba(0,0,0,0.03); }
+.topbar-nav a.active { color: var(--accent); font-weight: 650; }
+.topbar-spacer { flex: 1; }
+.topbar-status { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; color: var(--ink-secondary); background: var(--surface); border: 1px solid rgba(0,0,0,0.05); border-radius: var(--radius-pill); padding: 5px 12px; }
+.topbar-status .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--success); box-shadow: 0 0 0 2px rgba(34,197,94,0.2); }
+.topbar-gear { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; background: var(--surface); border: 1px solid rgba(0,0,0,0.05); border-radius: var(--radius-md); cursor: pointer; color: var(--ink-secondary); transition: all 0.15s; }
+.topbar-gear:hover { color: var(--accent); border-color: rgba(232,93,38,0.15); box-shadow: var(--shadow-sm); }
+
+/* ========== LAYOUT ========== */
+.layout { display: grid; grid-template-columns: 1fr 300px; gap: 32px; max-width: 1120px; margin: 0 auto; padding: 32px 24px; }
+@media (max-width: 1099px) { .layout { grid-template-columns: 1fr; } .rail { order: -1; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); } }
+.chat-col { min-width: 0; max-width: 720px; margin: 0 auto; width: 100%; }
+.rail { display: flex; flex-direction: column; gap: 16px; }
+
+/* ========== CARDS ========== */
+.card { background: var(--surface); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); border: 1px solid rgba(0,0,0,0.04); padding: 16px 20px; transition: box-shadow 0.15s, border-color 0.15s; }
+.card:hover { box-shadow: var(--shadow-md); border-color: rgba(0,0,0,0.06); }
+.ambient-card h3 { font-size: 11px; font-weight: 700; color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; }
+.ambient-card ul { list-style: none; display: flex; flex-direction: column; gap: 8px; font-size: 14px; }
+.ambient-card .meta { color: var(--ink-secondary); font-size: 13px; font-variant-numeric: tabular-nums; }
+
+/* ========== EMPTY STATE ========== */
+.empty-state { text-align: center; padding: 64px 24px; background: var(--surface); border-radius: var(--radius-xl); box-shadow: var(--shadow-sm); border: 1px solid rgba(0,0,0,0.04); }
+.empty-state h2 { font-size: 24px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 8px; }
+.empty-state p { color: var(--ink-secondary); font-size: 15px; max-width: 36ch; margin: 0 auto; }
+
+/* ========== THREAD ========== */
+.thread { display: flex; flex-direction: column; gap: 16px; margin-bottom: 24px; }
+.user-msg { align-self: flex-end; max-width: 80%; background: linear-gradient(135deg, var(--accent), var(--accent-dark)); color: white; border-radius: var(--radius-lg) var(--radius-lg) 4px var(--radius-lg); padding: 12px 16px; font-size: 15px; box-shadow: 0 2px 8px rgba(232,93,38,0.25); }
+.agent-msg { max-width: 65ch; font-size: 15px; line-height: 1.6; }
+.agent-msg p { margin-bottom: 8px; }
+.agent-msg p:last-child { margin-bottom: 0; }
+
+/* ========== CHAT INPUT ========== */
+.chat-input-wrap { position: sticky; bottom: 0; padding: 16px 0 24px; background: linear-gradient(transparent, var(--canvas) 25%); display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.chat-pills { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.chat-pill { background: var(--surface); color: var(--ink-secondary); border: 1px solid rgba(0,0,0,0.06); border-radius: var(--radius-pill); padding: 6px 14px; font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.15s; }
+.chat-pill:hover { color: var(--accent); border-color: rgba(232,93,38,0.15); background: var(--accent-light); box-shadow: var(--shadow-sm); }
+.chat-container { width: 100%; max-width: 680px; background: var(--surface); border: 1px solid rgba(0,0,0,0.08); border-radius: var(--radius-xl); box-shadow: var(--shadow-md); display: flex; align-items: flex-end; padding: 8px 8px 8px 16px; transition: box-shadow 0.2s, border-color 0.2s; }
+.chat-container:focus-within { box-shadow: var(--shadow-lg), var(--shadow-glow); border-color: rgba(232,93,38,0.2); }
+.chat-textarea { flex: 1; border: none; outline: none; background: transparent; font: inherit; font-size: 15px; color: var(--ink); padding: 8px 8px; min-height: 44px; max-height: 160px; resize: none; line-height: 1.5; }
+.chat-textarea::placeholder { color: var(--ink-faint); font-weight: 500; }
+.chat-send { width: 36px; height: 36px; border-radius: 50%; border: none; background: linear-gradient(135deg, var(--accent), var(--accent-dark)); color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(232,93,38,0.3); transition: all 0.15s; flex-shrink: 0; }
+.chat-send:hover { box-shadow: 0 4px 16px rgba(232,93,38,0.4); transform: scale(1.05); }
+.chat-send:active { transform: scale(0.95); }
+.chat-send:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+/* ========== FORMS ========== */
+.form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 12px; }
+.form-grid label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; font-weight: 500; color: var(--ink-secondary); }
+.form-grid input, .form-grid select, .form-grid textarea { font: inherit; font-size: 14px; color: var(--ink); background: var(--surface-sunken); border: 1px solid rgba(0,0,0,0.1); border-radius: var(--radius-md); padding: 8px 12px; min-height: 40px; transition: border-color 0.15s, box-shadow 0.15s; }
+.form-grid input:focus, .form-grid select:focus, .form-grid textarea:focus { outline: none; border-color: var(--accent); box-shadow: var(--shadow-glow); }
+.btn-primary { background: linear-gradient(135deg, var(--accent), var(--accent-dark)); color: white; border: none; border-radius: var(--radius-md); padding: 0 20px; min-height: 38px; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; box-shadow: 0 2px 8px rgba(232,93,38,0.25); transition: all 0.15s; }
+.btn-primary:hover { box-shadow: 0 4px 16px rgba(232,93,38,0.35); }
+.btn-primary:active { transform: scale(0.96); }
+.btn-primary:disabled { opacity: 0.45; cursor: not-allowed; }
+.btn-secondary { background: var(--surface-sunken); border: 1px solid rgba(0,0,0,0.06); border-radius: var(--radius-sm); padding: 8px 16px; font: inherit; font-size: 13px; font-weight: 500; cursor: pointer; color: var(--ink); transition: all 0.15s; min-height: 36px; }
+.btn-secondary:hover { background: var(--surface-panel); box-shadow: var(--shadow-sm); }
+
+/* ========== TASKS ========== */
+.task-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+.task-row { display: flex; gap: 12px; align-items: center; background: var(--surface); border-radius: var(--radius-md); box-shadow: var(--shadow-sm); border: 1px solid rgba(0,0,0,0.04); padding: 12px 16px; cursor: pointer; transition: all 0.15s; min-height: 44px; }
+.task-row:hover { box-shadow: var(--shadow-md); border-color: rgba(0,0,0,0.06); }
+.task-row.selected { background: var(--accent-light); border-color: rgba(232,93,38,0.15); }
+.task-title { flex: 1; font-weight: 500; }
+.task-meta { color: var(--ink-secondary); font-size: 13px; font-variant-numeric: tabular-nums; }
+.prio { font-weight: 700; font-size: 12px; }
+.prio-urgent { color: var(--danger); }
+.prio-normal { color: var(--accent); }
+.prio-low { color: var(--ink-faint); }
+
+/* ========== TABS ========== */
+.tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+.tab { background: var(--surface); color: var(--ink-secondary); border: 1px solid rgba(0,0,0,0.06); border-radius: var(--radius-pill); padding: 6px 14px; font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.15s; }
+.tab:hover { color: var(--ink); border-color: rgba(0,0,0,0.1); }
+.tab.active { background: var(--accent-light); color: var(--accent); font-weight: 600; border-color: rgba(232,93,38,0.15); }
+
+/* ========== BADGES ========== */
+.badge { font-size: 11px; font-weight: 650; text-transform: uppercase; letter-spacing: 0.05em; border-radius: var(--radius-sm); padding: 2px 8px; }
+.badge-auto { background: rgba(34,197,94,0.12); color: #16a34a; }
+.badge-confirm { background: rgba(245,158,11,0.15); color: #d97706; }
+.badge-blocked { background: rgba(239,68,68,0.1); color: var(--danger); }
+
+/* ========== TOAST ========== */
+.toast { position: fixed; left: 24px; bottom: 24px; background: var(--surface); border-radius: var(--radius-md); box-shadow: var(--shadow-lg); padding: 12px 16px; font-size: 14px; display: flex; gap: 12px; align-items: center; border: 1px solid rgba(0,0,0,0.04); z-index: 200; animation: toast-in 0.2s ease-out; }
+@keyframes toast-in { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ========== THINKING ========== */
+.thinking-dots { display: inline-flex; gap: 5px; padding: 8px 12px; background: var(--surface); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); border: 1px solid rgba(0,0,0,0.04); }
+.thinking-dots span { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); animation: pulse 1.4s ease-in-out infinite; }
+.thinking-dots span:nth-child(2) { animation-delay: 0.2s; }
+.thinking-dots span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes pulse { 0%, 80%, 100% { opacity: 0.25; transform: scale(0.85); } 40% { opacity: 1; transform: scale(1); } }
+
+/* ========== ANIMATIONS ========== */
+.fade-in { animation: fadeIn 0.18s ease-out; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<header class="topbar">
+  <span class="topbar-brand">FlowOS</span>
+  <nav class="topbar-nav">
+    <a href="#" class="active">Home</a>
+    <a href="#">Tasks</a>
+    <a href="#">Calendar</a>
+    <a href="#">Notes</a>
+  </nav>
+  <span class="topbar-spacer"></span>
+  <span class="topbar-status"><span class="dot"></span> anthropic · claude-sonnet-4-5</span>
+  <a href="#" class="topbar-gear" title="Settings">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+  </a>
+</header>
+
+<!-- MAIN LAYOUT -->
+<div class="layout">
+  <div class="chat-col">
+    <!-- EMPTY STATE -->
+    <div class="empty-state fade-in">
+      <h2>What do you need today?</h2>
+      <p>Ask below, or try a suggestion — I'll pull from your tasks, calendar, and notes.</p>
+    </div>
+
+    <!-- THREAD (after messages) -->
+    <div class="thread" style="margin-top: 24px;">
+      <div class="user-msg">Hi, how are you?</div>
+      <div class="agent-msg">
+        <p>Hey! I'm doing great, thanks for asking. I'm FlowOS — your AI productivity assistant. I can help you manage tasks, calendar events, notes, and preferences.</p>
+        <p>What would you like to do today?</p>
+      </div>
+      <div class="user-msg">List my open tasks</div>
+      <div class="agent-msg">
+        <p>Here are your open tasks:</p>
+        <div class="task-list">
+          <div class="task-row"><input type="checkbox"><span class="task-title">Buy groceries</span><span class="task-meta"><span class="prio prio-normal">normal</span> · todo</span></div>
+          <div class="task-row"><input type="checkbox"><span class="task-title">Finish report</span><span class="task-meta"><span class="prio prio-urgent">urgent</span> · todo</span></div>
+          <div class="task-row"><input type="checkbox"><span class="task-title">Call dentist</span><span class="task-meta"><span class="prio prio-low">low</span> · todo</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CHAT INPUT -->
+    <div class="chat-input-wrap">
+      <div class="chat-pills">
+        <button class="chat-pill">What do I need today?</button>
+        <button class="chat-pill">List open tasks</button>
+        <button class="chat-pill">Create a task</button>
+      </div>
+      <div class="chat-container">
+        <textarea class="chat-textarea" placeholder="Ask FlowOS anything…" rows="1"></textarea>
+        <button class="chat-send" title="Send">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 12V2M7 2L2.5 6.5M7 2L11.5 6.5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RAIL -->
+  <div class="rail">
+    <section class="card ambient-card">
+      <h3>Today's plan</h3>
+      <ul>
+        <li>Buy groceries <span class="meta">14:00 · normal</span></li>
+        <li>Finish report <span class="meta">16:00 · urgent</span></li>
+      </ul>
+    </section>
+    <section class="card ambient-card">
+      <h3>Next events</h3>
+      <ul>
+        <li>Team standup <span class="meta">09:00–09:30</span></li>
+        <li>Lunch with Alex <span class="meta">12:30–13:30</span></li>
+      </ul>
+    </section>
+    <section class="card ambient-card">
+      <h3>Due · 13.09</h3>
+      <p class="meta">2 due today · 5 open · 2 events</p>
+    </section>
+  </div>
+</div>
+
+</body>
+</html>
