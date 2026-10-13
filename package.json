@@ -16,7 +16,7 @@
     "typecheck:web": "tsc -p tsconfig.web.json --noEmit"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "0.125.0",
+    "@anthropic-ai/sdk": "0.133.0",
     "better-sqlite3": "13.0.3",
     "react": "19.3.0",
     "react-dom": "19.3.0"
