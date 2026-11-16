@@ -17,7 +17,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "0.125.0",
-    "better-sqlite3": "13.0.3",
+    "better-sqlite3": "13.1.1",
     "react": "19.3.0",
     "react-dom": "19.3.0"
   },
